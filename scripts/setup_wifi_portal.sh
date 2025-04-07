@@ -43,11 +43,16 @@ def index():
     if request.method == "POST":
         ssid = request.form["ssid"]
         psk = request.form["psk"]
-        subprocess.run(["sudo", "wpa_cli", "add_network"])
-        subprocess.run(["sudo", "wpa_cli", "set_network", "0", "ssid", f'"{ssid}"'])
-        subprocess.run(["sudo", "wpa_cli", "set_network", "0", "psk", f'"{psk}"'])
-        subprocess.run(["sudo", "wpa_cli", "enable_network", "0"])
-        subprocess.run(["sudo", "wpa_cli", "save_config"])
+        config = f"""ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=KR
+
+network={{
+    ssid=\\"{ssid}\\"
+    psk=\\"{psk}\\"
+}}"""
+        subprocess.run(["sudo", "tee", "/etc/wpa_supplicant/wpa_supplicant.conf"], input=config.encode())
+        subprocess.run(["sudo", "systemctl", "restart", "wpa_supplicant"])
         return f"<p>Network {ssid} saved!</p><a href='/'>Back</a>"
     return render_template_string(html)
 
