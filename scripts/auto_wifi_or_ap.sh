@@ -11,11 +11,9 @@ if [ -n "$KNOWN_SSID" ]; then
   sudo systemctl stop hostapd
   sudo systemctl stop dnsmasq
   sudo ip addr flush dev $WIFI_INTERFACE
-  sudo systemctl restart NetworkManager
   sudo systemctl restart wpa_supplicant
 else
   echo "🚫 No known Wi-Fi found. Enabling AP mode..."
-  sudo systemctl stop NetworkManager
   sudo systemctl stop wpa_supplicant
   sudo ip link set $WIFI_INTERFACE down
   sudo ip addr flush dev $WIFI_INTERFACE
