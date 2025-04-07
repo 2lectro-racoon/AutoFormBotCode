@@ -36,7 +36,15 @@ sudo sed -i 's|^#DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/d
 
 # 🔓 Unmask hostapd if it is masked
 echo "🔓 Unmasking hostapd if masked..."
-sudo systemctl unmask hostapd
+# New block added
+echo "🔧 Marking wlan0 as unmanaged in NetworkManager..."
+sudo mkdir -p /etc/NetworkManager/conf.d
+sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null <<EOF
+[keyfile]
+unmanaged-devices=interface-name:wlan0
+EOF
+sudo systemctl restart NetworkManager
+# End of new block
 
 # 🌐 Assigning static IP to wlan0...
 sudo ip addr add 192.168.4.1/24 dev wlan0

@@ -4,7 +4,12 @@ WIFI_INTERFACE="wlan0"
 FLASK_SERVICE="wifi_portal.service"
 
 # Check for nearby known SSID from wpa_supplicant.conf
-KNOWN_SSID=$(iw dev $WIFI_INTERFACE scan | grep SSID | awk '{print $2}' | grep -F -f <(sudo grep -oP '(?<=ssid=").+?(?=")' /etc/wpa_supplicant/wpa_supplicant.conf))
+WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
+if [ -f "$WPA_CONF" ]; then
+  KNOWN_SSID=$(iw dev $WIFI_INTERFACE scan | grep SSID | awk '{print $2}' | grep -F -f <(grep -oP '(?<=ssid=").+?(?=")' "$WPA_CONF"))
+else
+  KNOWN_SSID=""
+fi
 
 if [ -n "$KNOWN_SSID" ]; then
   echo "📡 Known Wi-Fi network '$KNOWN_SSID' found. Attempting to connect..."
