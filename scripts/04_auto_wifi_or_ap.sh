@@ -21,7 +21,6 @@ else
   echo "🚫 No known Wi-Fi found. Enabling AP mode..."
   sudo systemctl stop wpa_supplicant
   sudo ip link set $WIFI_INTERFACE down
-  sudo ip addr flush dev $WIFI_INTERFACE
   sudo ip link set $WIFI_INTERFACE up
   sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
   cat <<EOF | sudo tee /etc/dnsmasq.conf > /dev/null
