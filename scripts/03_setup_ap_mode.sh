@@ -7,7 +7,7 @@ echo "📝 Creating /etc/hostapd/hostapd.conf..."
 sudo tee /etc/hostapd/hostapd.conf > /dev/null <<EOF
 interface=wlan0
 driver=nl80211
-ssid=mypi-setup
+ssid=AutoFormBotpi-setup
 hw_mode=g
 channel=6
 wmm_enabled=0
