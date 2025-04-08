@@ -15,7 +15,8 @@ if [ -n "$KNOWN_SSID" ]; then
   echo "📡 Known Wi-Fi network '$KNOWN_SSID' found. Attempting to connect..."
   sudo systemctl stop hostapd
   sudo systemctl stop dnsmasq
-  sudo ip addr flush dev $WIFI_INTERFACE
+  sudo ip link set $WIFI_INTERFACE down
+  sudo ip link set $WIFI_INTERFACE up
   sudo systemctl restart wpa_supplicant
 else
   echo "🚫 No known Wi-Fi found. Enabling AP mode..."
