@@ -24,7 +24,12 @@ else
   sudo ip addr flush dev $WIFI_INTERFACE
   sudo ip link set $WIFI_INTERFACE up
   sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+  cat <<EOF | sudo tee /etc/dnsmasq.conf > /dev/null
+interface=wlan0
+dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
+EOF
   sudo systemctl start dnsmasq
+  sudo systemctl unmask hostapd
   sudo systemctl start hostapd
   sudo systemctl start $FLASK_SERVICE
 fi
