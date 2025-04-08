@@ -18,6 +18,26 @@ if [ -n "$KNOWN_SSID" ]; then
   sudo ip link set $WIFI_INTERFACE down
   sudo ip link set $WIFI_INTERFACE up
   sudo systemctl restart wpa_supplicant
+
+  # Check if wlan0 has an IP address after attempting connection
+  sleep 5  # allow time for DHCP
+  WLAN_IP=$(ip addr show $WIFI_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+
+  if [ -z "$WLAN_IP" ]; then
+    echo "⚠️  Wi-Fi connection failed or no IP obtained. Switching to AP mode..."
+    sudo systemctl stop wpa_supplicant
+    sudo ip link set $WIFI_INTERFACE down
+    sudo ip link set $WIFI_INTERFACE up
+    sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+    cat <<EOF | sudo tee /etc/dnsmasq.conf > /dev/null
+interface=wlan0
+dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
+EOF
+    sudo systemctl start dnsmasq
+    sudo systemctl unmask hostapd
+    sudo systemctl start hostapd
+    sudo systemctl start $FLASK_SERVICE
+  fi
 else
   echo "🚫 No known Wi-Fi found. Enabling AP mode..."
   sudo systemctl stop wpa_supplicant
