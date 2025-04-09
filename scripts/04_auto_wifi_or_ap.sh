@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Ensure wpa_supplicant is running before continuing
+sudo systemctl unmask wpa_supplicant
+sudo systemctl restart wpa_supplicant
+
+# Give wpa_supplicant a moment to initialize
+sleep 3
+
 WIFI_INTERFACE="wlan0"
 FLASK_SERVICE="wifi_portal.service"
 
