@@ -50,6 +50,14 @@ if [ -n "$KNOWN_SSID" ]; then
   sleep 10
 
   WLAN_IP=$(ip addr show $WIFI_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+  
+  # IP가 없으면 dhclient로 수동 요청
+  if [ -z "$WLAN_IP" ]; then
+    echo "🔁 No IP obtained. Trying dhclient..."
+    sudo dhclient -v $WIFI_INTERFACE
+    sleep 5
+    WLAN_IP=$(ip addr show $WIFI_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+  fi
 
   if [ -n "$WLAN_IP" ]; then
     echo "✅ Connected to $KNOWN_SSID with IP $WLAN_IP"
