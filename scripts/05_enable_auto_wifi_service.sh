@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SERVICE_NAME="auto_wifi_or_ap.service"
-SCRIPT_PATH="/home/pi/github/AutoFormBotCode/scripts/auto_wifi_or_ap.sh"
+SCRIPT_PATH="$(realpath "$(dirname "$0")")/auto_wifi_or_ap.sh"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME"
 
 # Create systemd service file
