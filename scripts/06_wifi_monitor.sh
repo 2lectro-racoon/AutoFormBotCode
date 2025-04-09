@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CHECK_INTERVAL=30  # 감시 주기 (초)
+CHECK_INTERVAL=30  # check interval (s)
 WIFI_INTERFACE="wlan0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AUTO_SWITCH_SCRIPT="$SCRIPT_DIR/04_auto_wifi_or_ap.sh"
