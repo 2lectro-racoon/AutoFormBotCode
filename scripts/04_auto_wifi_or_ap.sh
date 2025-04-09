@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Unblock Wi-Fi in case it was disabled by previous state
+sudo rfkill unblock wifi
 # Ensure wpa_supplicant is running before continuing
 sudo systemctl unmask wpa_supplicant
 sudo systemctl restart wpa_supplicant
