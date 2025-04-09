@@ -14,6 +14,16 @@ while true; do
         sudo ip link set $WIFI_INTERFACE up
         sleep 2
         "$AUTO_SWITCH_SCRIPT"
+    else
+        if ! systemctl is-active --quiet dnsmasq; then
+            echo "⚠️ dnsmasq is not running. Restarting..."
+            sudo systemctl start dnsmasq
+        fi
+
+        if ! systemctl is-active --quiet hostapd && ! iw dev $WIFI_INTERFACE link | grep -q "Connected"; then
+            echo "🔁 Neither connected nor AP running. Reinitializing..."
+            "$AUTO_SWITCH_SCRIPT"
+        fi
     fi
 
     sleep $CHECK_INTERVAL
