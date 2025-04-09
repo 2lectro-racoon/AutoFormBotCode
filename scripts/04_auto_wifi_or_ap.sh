@@ -46,12 +46,17 @@ if [ -n "$KNOWN_SSID" ]; then
   sudo ip link set $WIFI_INTERFACE up
   sudo systemctl restart wpa_supplicant
 
-  # Check if wlan0 has an IP address after attempting connection
-  sleep 5  # allow time for DHCP
+  sleep 5  # allow time for association
+  echo "🔄 Attempting DHCP..."
+  sudo dhclient -v $WIFI_INTERFACE
+
   WLAN_IP=$(ip addr show $WIFI_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
 
-  if [ -z "$WLAN_IP" ]; then
-    echo "⚠️  Wi-Fi connection failed or no IP obtained. Switching to AP mode..."
+  if [ -n "$WLAN_IP" ]; then
+    echo "✅ Connected to $KNOWN_SSID with IP $WLAN_IP"
+    exit 0
+  else
+    echo "⚠️  DHCP failed. Falling back to AP mode..."
     sudo systemctl stop wpa_supplicant
     sudo wpa_cli -i $WIFI_INTERFACE terminate
     sleep 1
@@ -68,7 +73,6 @@ if [ -n "$KNOWN_SSID" ]; then
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
-    # Ensure wlan0 is unmanaged in AP mode
     echo -e "[keyfile]\nunmanaged-devices=interface-name:$WIFI_INTERFACE" | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
     sudo systemctl reload NetworkManager
     sleep 2
