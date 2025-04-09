@@ -3,6 +3,18 @@
 WIFI_INTERFACE="wlan0"
 FLASK_SERVICE="wifi_portal.service"
 
+# Wait for wlan0 to be up
+RETRY=0
+while ! ip link show $WIFI_INTERFACE | grep -q "state UP"; do
+  echo "⏳ Waiting for $WIFI_INTERFACE to be up..."
+  sleep 1
+  RETRY=$((RETRY+1))
+  if [ "$RETRY" -ge 10 ]; then
+    echo "❌ $WIFI_INTERFACE did not come up. Aborting."
+    exit 1
+  fi
+done
+
 # Check for nearby known SSID from wpa_supplicant.conf
 WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
 if [ -f "$WPA_CONF" ]; then
@@ -26,6 +38,10 @@ if [ -n "$KNOWN_SSID" ]; then
   if [ -z "$WLAN_IP" ]; then
     echo "⚠️  Wi-Fi connection failed or no IP obtained. Switching to AP mode..."
     sudo systemctl stop wpa_supplicant
+    sudo wpa_cli -i $WIFI_INTERFACE terminate
+    sleep 1
+    sudo wpa_supplicant -B -i $WIFI_INTERFACE -c "$WPA_CONF"
+    sleep 5
     sudo ip link set $WIFI_INTERFACE down
     sudo ip link set $WIFI_INTERFACE up
     if ! ip addr show $WIFI_INTERFACE | grep -q "192.168.4.1"; then
