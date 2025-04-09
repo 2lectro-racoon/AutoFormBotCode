@@ -18,17 +18,31 @@ sleep 3
 WIFI_INTERFACE="wlan0"
 FLASK_SERVICE="wifi_portal.service"
 
-# Wait for wlan0 to be up
+# Wait for wlan0 to be recognized
 RETRY=0
-while ! ip link show $WIFI_INTERFACE | grep -q "state UP"; do
-  echo "⏳ Waiting for $WIFI_INTERFACE to be up..."
+while ! iw dev "$WIFI_INTERFACE" info &> /dev/null; do
+  echo "⏳ Waiting for $WIFI_INTERFACE to be recognized..."
   sleep 1
   RETRY=$((RETRY+1))
-  if [ "$RETRY" -ge 10 ]; then
-    echo "❌ $WIFI_INTERFACE did not come up. Aborting."
+  if [ "$RETRY" -ge 20 ]; then
+    echo "❌ $WIFI_INTERFACE not recognized after 20 seconds. Aborting."
     exit 1
   fi
 done
+echo "✅ $WIFI_INTERFACE recognized by system."
+
+RETRY=0
+while ! ip link show "$WIFI_INTERFACE" | grep -q "state UP"; do
+  echo "⏳ Waiting for $WIFI_INTERFACE to be UP..."
+  sudo ip link set "$WIFI_INTERFACE" up
+  sleep 1
+  RETRY=$((RETRY+1))
+  if [ "$RETRY" -ge 20 ]; then
+    echo "❌ $WIFI_INTERFACE failed to come UP. Aborting."
+    exit 1
+  fi
+done
+echo "✅ $WIFI_INTERFACE is UP."
 
 # Check for nearby known SSID from wpa_supplicant.conf
 WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
