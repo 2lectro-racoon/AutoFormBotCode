@@ -4,6 +4,14 @@
 sudo systemctl unmask wpa_supplicant
 sudo systemctl restart wpa_supplicant
 
+# Ensure wlan0 is managed by NetworkManager before attempting Wi-Fi connection
+if [ -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf ]; then
+  echo "🔄 Removing unmanaged configuration for $WIFI_INTERFACE"
+  sudo rm /etc/NetworkManager/conf.d/unmanaged-wlan0.conf
+  sudo systemctl reload NetworkManager
+  sleep 2
+fi
+
 # Give wpa_supplicant a moment to initialize
 sleep 3
 
@@ -60,6 +68,10 @@ if [ -n "$KNOWN_SSID" ]; then
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
+    # Ensure wlan0 is unmanaged in AP mode
+    echo -e "[keyfile]\nunmanaged-devices=interface-name:$WIFI_INTERFACE" | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
+    sudo systemctl reload NetworkManager
+    sleep 2
     sudo systemctl start dnsmasq
     sudo systemctl unmask hostapd
     sudo systemctl start hostapd
@@ -79,6 +91,10 @@ else
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
+  # Ensure wlan0 is unmanaged in AP mode
+  echo -e "[keyfile]\nunmanaged-devices=interface-name:$WIFI_INTERFACE" | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
+  sudo systemctl reload NetworkManager
+  sleep 2
   sudo systemctl start dnsmasq
   sudo systemctl unmask hostapd
   sudo systemctl start hostapd
