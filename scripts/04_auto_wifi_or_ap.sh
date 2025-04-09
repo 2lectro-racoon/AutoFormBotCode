@@ -28,7 +28,11 @@ if [ -n "$KNOWN_SSID" ]; then
     sudo systemctl stop wpa_supplicant
     sudo ip link set $WIFI_INTERFACE down
     sudo ip link set $WIFI_INTERFACE up
-    sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+    if ! ip addr show $WIFI_INTERFACE | grep -q "192.168.4.1"; then
+      sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+    else
+      echo "ℹ️  IP 192.168.4.1 is already assigned to $WIFI_INTERFACE"
+    fi
     cat <<EOF | sudo tee /etc/dnsmasq.conf > /dev/null
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
@@ -43,7 +47,11 @@ else
   sudo systemctl stop wpa_supplicant
   sudo ip link set $WIFI_INTERFACE down
   sudo ip link set $WIFI_INTERFACE up
-  sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+  if ! ip addr show $WIFI_INTERFACE | grep -q "192.168.4.1"; then
+    sudo ip addr add 192.168.4.1/24 dev $WIFI_INTERFACE
+  else
+    echo "ℹ️  IP 192.168.4.1 is already assigned to $WIFI_INTERFACE"
+  fi
   cat <<EOF | sudo tee /etc/dnsmasq.conf > /dev/null
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
