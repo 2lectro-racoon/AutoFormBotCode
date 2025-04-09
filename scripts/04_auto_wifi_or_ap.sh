@@ -40,6 +40,15 @@ fi
 
 if [ -n "$KNOWN_SSID" ]; then
   echo "📡 Known Wi-Fi network '$KNOWN_SSID' found. Attempting to connect..."
+
+  CURRENT_SCAN_SSID=$(sudo iw dev $WIFI_INTERFACE scan | grep -oP '(?<=SSID: ).+')
+  if ! echo "$CURRENT_SCAN_SSID" | grep -Fxq "$KNOWN_SSID"; then
+    echo "⚠️  SSID '$KNOWN_SSID' not currently available. Switching to AP mode..."
+    KNOWN_SSID=""
+  fi
+fi
+
+if [ -n "$KNOWN_SSID" ]; then
   sudo systemctl stop hostapd
   sudo systemctl stop dnsmasq
   sudo systemctl restart NetworkManager
