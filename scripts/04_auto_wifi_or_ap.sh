@@ -42,13 +42,12 @@ if [ -n "$KNOWN_SSID" ]; then
   echo "📡 Known Wi-Fi network '$KNOWN_SSID' found. Attempting to connect..."
   sudo systemctl stop hostapd
   sudo systemctl stop dnsmasq
+  sudo systemctl restart NetworkManager
   sudo ip link set $WIFI_INTERFACE down
   sudo ip link set $WIFI_INTERFACE up
-  sudo systemctl restart wpa_supplicant
-
-  sleep 5  # allow time for association
-  echo "🔄 Attempting DHCP..."
-  sudo dhclient -v $WIFI_INTERFACE
+  sleep 2
+  nmcli dev wifi connect "$KNOWN_SSID"
+  sleep 10
 
   WLAN_IP=$(ip addr show $WIFI_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
 
@@ -56,7 +55,7 @@ if [ -n "$KNOWN_SSID" ]; then
     echo "✅ Connected to $KNOWN_SSID with IP $WLAN_IP"
     exit 0
   else
-    echo "⚠️  DHCP failed. Falling back to AP mode..."
+    echo "⚠️  Wi-Fi connection failed or no IP obtained. Switching to AP mode..."
     sudo systemctl stop wpa_supplicant
     sudo wpa_cli -i $WIFI_INTERFACE terminate
     sleep 1
