@@ -1,4 +1,6 @@
 #!/bin/bash
+# Set regulatory domain to US for consistent AP behavior
+sudo iw reg set US
 
 # Unblock Wi-Fi in case it was disabled by previous state
 sudo rfkill unblock wifi
