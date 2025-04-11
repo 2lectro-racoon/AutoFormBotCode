@@ -2,6 +2,8 @@
 
 # Unblock Wi-Fi in case it was disabled by previous state
 sudo rfkill unblock wifi
+# Unmask hostapd to ensure it can be started
+sudo systemctl unmask hostapd
 
 # Ensure wlan0 is managed by NetworkManager before attempting Wi-Fi connection
 if [ -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf ]; then
