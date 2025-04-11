@@ -91,6 +91,16 @@ if [ -n "$KNOWN_SSID" ]; then
     exit 0
   else
     echo "⚠️  Wi-Fi connection failed or no IP obtained. Switching to AP mode..."
+    
+    # Make wlan0 unmanaged by NetworkManager (for AP mode)
+    cat <<EOF | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
+[keyfile]
+unmanaged-devices=interface-name:wlan0
+EOF
+
+    sudo systemctl reload NetworkManager
+    sleep 2
+    
     sudo systemctl stop wpa_supplicant
     sleep 1
     sudo ip link set $WIFI_INTERFACE down
@@ -113,6 +123,16 @@ EOF
   fi
 else
   echo "🚫 No known Wi-Fi found. Enabling AP mode..."
+  
+  # Make wlan0 unmanaged by NetworkManager (for AP mode)
+  cat <<EOF | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
+[keyfile]
+unmanaged-devices=interface-name:wlan0
+EOF
+
+  sudo systemctl reload NetworkManager
+  sleep 2
+  
   sudo ip link set $WIFI_INTERFACE down
   sudo ip link set $WIFI_INTERFACE up
   if ! ip addr show $WIFI_INTERFACE | grep -q "192.168.4.1"; then
