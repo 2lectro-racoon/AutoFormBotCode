@@ -11,7 +11,7 @@ echo "📝 Creating systemd service for Wi-Fi monitoring..."
 sudo tee $SERVICE_FILE > /dev/null <<EOF
 [Unit]
 Description=Wi-Fi Connection Monitor and Recovery
-After=network.target
+After=NetworkManager.service
 
 [Service]
 ExecStart=$SCRIPT_PATH

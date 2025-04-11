@@ -43,24 +43,10 @@ def index():
     if request.method == "POST":
         ssid = request.form["ssid"]
         psk = request.form["psk"]
-        config = f"""ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=GB
-
-network={{
-    ssid="{ssid}"
-    psk="{psk}"
-    scan_ssid=1
-}}"""
-        subprocess.run(["sudo", "tee", "/etc/wpa_supplicant/wpa_supplicant.conf"], input=config.encode())
-        subprocess.run(["sudo", "systemctl", "stop", "hostapd"])
-        subprocess.run(["sudo", "systemctl", "stop", "dnsmasq"])
-        subprocess.run(["sudo", "ip", "addr", "flush", "dev", "wlan0"])
-        subprocess.run(["sudo", "ip", "link", "set", "wlan0", "down"])
-        subprocess.run(["sudo", "ip", "link", "set", "wlan0", "up"])
-        subprocess.run(["sudo", "wpa_supplicant", "-B", "-i", "wlan0", "-c", "/etc/wpa_supplicant/wpa_supplicant.conf"])
-        subprocess.run(["sudo", "dhclient", "wlan0"])
-        return f"<p>Network {ssid} saved!</p><a href='/'>Back</a>"
+        subprocess.run([
+            "nmcli", "dev", "wifi", "connect", ssid, "password", psk
+        ])
+        return f"&lt;p&gt;Attempted connection to {ssid}. Please check status.&lt;/p&gt;&lt;a href='/'&gt;Back&lt;/a&gt;"
     return render_template_string(html)
 
 if __name__ == "__main__":

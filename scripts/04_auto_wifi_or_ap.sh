@@ -2,9 +2,6 @@
 
 # Unblock Wi-Fi in case it was disabled by previous state
 sudo rfkill unblock wifi
-# Ensure wpa_supplicant is running before continuing
-sudo systemctl unmask wpa_supplicant
-sudo systemctl restart wpa_supplicant
 
 # Ensure wlan0 is managed by NetworkManager before attempting Wi-Fi connection
 if [ -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf ]; then
@@ -14,7 +11,7 @@ if [ -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf ]; then
   sleep 2
 fi
 
-# Give wpa_supplicant a moment to initialize
+# Give NetworkManager a moment to initialize
 sleep 3
 
 WIFI_INTERFACE="wlan0"
@@ -46,18 +43,15 @@ while ! ip link show "$WIFI_INTERFACE" | grep -q "state UP"; do
 done
 echo "✅ $WIFI_INTERFACE is UP."
 
-# Check for nearby known SSID from wpa_supplicant.conf
-WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
-if [ -f "$WPA_CONF" ]; then
-  KNOWN_SSID=$(sudo iw dev $WIFI_INTERFACE scan | grep SSID | awk '{print $2}' | grep -F -f <(grep -oP '(?<=ssid=").+?(?=")' "$WPA_CONF"))
-else
-  KNOWN_SSID=""
-fi
+# Check for nearby known SSID from NetworkManager
+KNOWN_SSIDS=$(nmcli connection show | grep wifi | awk '{print $1}')
+CURRENT_SCAN_SSIDS=$(nmcli dev wifi list | awk 'NR>1 {print $2}')
+KNOWN_SSID=$(echo "$CURRENT_SCAN_SSIDS" | grep -Fx -f <(echo "$KNOWN_SSIDS") | head -n 1)
 
 if [ -n "$KNOWN_SSID" ]; then
   echo "📡 Known Wi-Fi network '$KNOWN_SSID' found. Attempting to connect..."
 
-  CURRENT_SCAN_SSID=$(sudo iw dev $WIFI_INTERFACE scan | grep -oP '(?<=SSID: ).+')
+  CURRENT_SCAN_SSID=$(nmcli dev wifi list | awk 'NR>1 {print $2}')
   if ! echo "$CURRENT_SCAN_SSID" | grep -Fxq "$KNOWN_SSID"; then
     echo "⚠️  SSID '$KNOWN_SSID' not currently available. Switching to AP mode..."
     KNOWN_SSID=""
@@ -96,10 +90,7 @@ if [ -n "$KNOWN_SSID" ]; then
   else
     echo "⚠️  Wi-Fi connection failed or no IP obtained. Switching to AP mode..."
     sudo systemctl stop wpa_supplicant
-    sudo wpa_cli -i $WIFI_INTERFACE terminate
     sleep 1
-    sudo wpa_supplicant -B -i $WIFI_INTERFACE -c "$WPA_CONF"
-    sleep 5
     sudo ip link set $WIFI_INTERFACE down
     sudo ip link set $WIFI_INTERFACE up
     if ! ip addr show $WIFI_INTERFACE | grep -q "192.168.4.1"; then
@@ -111,7 +102,6 @@ if [ -n "$KNOWN_SSID" ]; then
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
-    echo -e "[keyfile]\nunmanaged-devices=interface-name:$WIFI_INTERFACE" | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
     sudo systemctl reload NetworkManager
     sleep 2
     sudo systemctl start dnsmasq
@@ -121,7 +111,6 @@ EOF
   fi
 else
   echo "🚫 No known Wi-Fi found. Enabling AP mode..."
-  sudo systemctl stop wpa_supplicant
   sudo ip link set $WIFI_INTERFACE down
   sudo ip link set $WIFI_INTERFACE up
   if ! ip addr show $WIFI_INTERFACE | grep -q "192.168.4.1"; then
@@ -134,7 +123,6 @@ interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
   # Ensure wlan0 is unmanaged in AP mode
-  echo -e "[keyfile]\nunmanaged-devices=interface-name:$WIFI_INTERFACE" | sudo tee /etc/NetworkManager/conf.d/unmanaged-wlan0.conf > /dev/null
   sudo systemctl reload NetworkManager
   sleep 2
   sudo systemctl start dnsmasq

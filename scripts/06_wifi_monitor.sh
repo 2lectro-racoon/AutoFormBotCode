@@ -4,16 +4,13 @@ CHECK_INTERVAL=30  # check interval (s)
 WIFI_INTERFACE="wlan0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AUTO_SWITCH_SCRIPT="$SCRIPT_DIR/04_auto_wifi_or_ap.sh"
-# Unblock Wi-Fi in case it was soft-blocked (e.g., by rfkill)
-sudo rfkill unblock wifi
 
 while true; do
-    STATE=$(cat /sys/class/net/$WIFI_INTERFACE/operstate)
-    LINK_INFO=$(iw dev $WIFI_INTERFACE link)
-
-    if [[ "$STATE" != "up" ]] || ! echo "$LINK_INFO" | grep -q "Connected"; then
-        echo "❌ Wi-Fi disconnected or interface down. Re-running auto switch..."
-        sudo ip link set $WIFI_INTERFACE up
+    CONNECTION_STATE=$(nmcli -t -f GENERAL.STATE device show "$WIFI_INTERFACE" | grep -o '[0-9]\+')
+    
+    if [[ "$CONNECTION_STATE" -ne 100 ]]; then
+        echo "❌ Wi-Fi not connected. Re-running auto switch..."
+        nmcli radio wifi on
         sleep 2
         "$AUTO_SWITCH_SCRIPT"
     else
@@ -22,7 +19,8 @@ while true; do
             sudo systemctl start dnsmasq
         fi
 
-        if ! systemctl is-active --quiet hostapd && ! iw dev $WIFI_INTERFACE link | grep -q "Connected"; then
+        HOSTAPD_ACTIVE=$(systemctl is-active hostapd)
+        if [[ "$HOSTAPD_ACTIVE" != "active" && "$CONNECTION_STATE" -ne 100 ]]; then
             echo "🔁 Neither connected nor AP running. Reinitializing..."
             "$AUTO_SWITCH_SCRIPT"
         fi

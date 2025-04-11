@@ -9,8 +9,8 @@ echo "📝 Creating systemd service for auto Wi-Fi/AP switch..."
 sudo tee $SERVICE_FILE > /dev/null <<EOF
 [Unit]
 Description=Auto Wi-Fi or AP Mode Switcher
-After=network-online.target NetworkManager.service
-Wants=network-online.target
+After=network.target
+Wants=network.target
 
 [Service]
 ExecStart=$SCRIPT_PATH

@@ -45,17 +45,6 @@ unmanaged-devices=interface-name:wlan0
 EOF
 sudo systemctl restart NetworkManager
 
-# 🚫 Disabling GUI Wi-Fi at boot (for headless operation)
-echo "🚫 Disabling GUI Wi-Fi on boot..."
-sudo tee /etc/xdg/autostart/disable-wifi.desktop > /dev/null <<EOF
-[Desktop Entry]
-Type=Application
-Name=Disable WiFi GUI
-Exec=nmcli radio wifi off
-X-GNOME-Autostart-enabled=true
-EOF
-# End of new block
-
 # 🌐 Assigning static IP to wlan0...
 sudo ip addr add 192.168.4.1/24 dev wlan0
 
