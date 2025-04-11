@@ -5,7 +5,18 @@ sudo iw reg set US
 # Unblock Wi-Fi in case it was disabled by previous state
 sudo rfkill unblock wifi
 # Unmask hostapd to ensure it can be started
-sudo systemctl unmask hostapd
+# Ensure NetworkManager manages wlan0 and disables MAC address randomization
+sudo mkdir -p /etc/NetworkManager/conf.d
+cat <<EOF | sudo tee /etc/NetworkManager/conf.d/99-wifi-managed.conf > /dev/null
+[device]
+wifi.scan-rand-mac-address=no
+
+[ifupdown]
+managed=true
+EOF
+
+sudo systemctl reload NetworkManager
+sleep 2
 
 # Ensure wlan0 is managed by NetworkManager before attempting Wi-Fi connection
 if [ -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf ]; then
