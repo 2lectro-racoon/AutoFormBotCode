@@ -6,7 +6,8 @@ sudo iw reg set KR
 if [ -f /etc/wpa_supplicant/wpa_supplicant.conf ]; then
     sudo sed -i 's/^#\?country=.*/country=KR/' /etc/wpa_supplicant/wpa_supplicant.conf
 else
-    echo "⚠️  /etc/wpa_supplicant/wpa_supplicant.conf not found, skipping country setting." | tee /dev/tty1
+    echo "⚠️  /etc/wpa_supplicant/wpa_supplicant.conf not found, creating with KR country..." | tee /dev/tty1
+    echo "country=KR" | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf > /dev/null
 fi
 
 # 1. Install required system packages
