@@ -70,14 +70,14 @@ done
 
 # Scan for known SSIDs
 echo "🔍 Scanning for Wi-Fi networks..."
-nmcli radio wifi on
+sudo nmcli radio wifi on
 sleep 2
-nmcli dev wifi rescan
+sudo nmcli dev wifi rescan
 sleep 3
 
 SSID_FOUND=""
 for SSID in $KNOWN_SSIDS; do
-  if nmcli -t -f SSID dev wifi | grep -q "^$SSID$"; then
+  if sudo nmcli -t -f SSID dev wifi | grep -q "^$SSID$"; then
     SSID_FOUND=$SSID
     break
   fi
@@ -86,7 +86,7 @@ done
 if [[ -n "$SSID_FOUND" ]]; then
   echo "✅ Known SSID '$SSID_FOUND' found. Connecting to it..."
   enable_sta_mode
-  nmcli con up "$SSID_FOUND"
+  sudo nmcli con up "$SSID_FOUND"
 else
   echo "🚫 No known SSID found. Starting AP mode..."
   enable_ap_mode
