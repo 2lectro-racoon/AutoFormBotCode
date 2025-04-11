@@ -71,12 +71,23 @@ def index():
     if request.method == "POST":
         ssid = request.form["ssid"]
         psk = request.form["psk"]
+
+        # Create a NetworkManager connection manually
         subprocess.run([
-            "nmcli", "dev", "wifi", "connect", ssid,
-            "password", psk, "name", ssid
+            "nmcli", "connection", "add", "type", "wifi", "con-name", ssid,
+            "ifname", "wlan0", "ssid", ssid
+        ])
+        subprocess.run([
+            "nmcli", "connection", "modify", ssid,
+            "wifi-sec.key-mgmt", "wpa-psk",
+            "wifi-sec.psk", psk
+        ])
+        # Now attempt to connect
+        subprocess.run([
+            "nmcli", "connection", "up", ssid
         ])
         subprocess.run(["/home/" + os.getlogin() + "/AutoFormBotCode/scripts/nmservice/04_auto_wifi_or_ap.sh"])
-        return f"&lt;p&gt;Attempted connection to {ssid}. Please check status.&lt;/p&gt;&lt;a href='/'&gt;Back&lt;/a&gt;"
+        return f"<p>Saved and attempted connection to {ssid}. Please check status.</p><a href='/'>Back</a>"
     return render_template_string(html)
 
 if __name__ == "__main__":
