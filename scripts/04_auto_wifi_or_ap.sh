@@ -1,4 +1,5 @@
 #!/bin/bash
+WIFI_INTERFACE="wlan0"
 # Ensure regulatory domain is persistently set via systemd service
 echo "🔧 Creating regulatory domain service..."
 cat <<EOF | sudo tee /etc/systemd/system/set-regdom.service > /dev/null
@@ -74,6 +75,11 @@ while ! ip link show "$WIFI_INTERFACE" | grep -q "state UP"; do
   fi
 done
 echo "✅ $WIFI_INTERFACE is UP."
+ 
+# Ensure interface is in AP mode before starting hostapd
+sudo ip link set "$WIFI_INTERFACE" down
+sudo iw dev "$WIFI_INTERFACE" set type __ap
+sudo ip link set "$WIFI_INTERFACE" up
 
 # Check for nearby known SSID from NetworkManager
 KNOWN_SSIDS=$(nmcli connection show | grep wifi | awk '{print $1}')
@@ -98,6 +104,15 @@ if [ -n "$KNOWN_SSID" ]; then
   sudo ip link set $WIFI_INTERFACE up
   sleep 2
   nmcli dev wifi connect "$KNOWN_SSID"
+  
+  # Re-enable wlan0 management by NetworkManager after receiving new credentials
+  if [ -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf ]; then
+    echo "🔄 Re-enabling NetworkManager management for wlan0"
+    sudo rm -f /etc/NetworkManager/conf.d/unmanaged-wlan0.conf
+    sudo systemctl reload NetworkManager
+    sleep 2
+  fi
+  
   sleep 10
 
   WLAN_IP=$(ip addr show $WIFI_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
