@@ -36,6 +36,7 @@ dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
 
 echo "🌐 Setting static IP for wlan0..."
+sudo rfkill unblock wifi
 sudo ip link set wlan0 down
 sudo ip addr flush dev wlan0
 sudo ip addr add 192.168.4.1/24 dev wlan0
