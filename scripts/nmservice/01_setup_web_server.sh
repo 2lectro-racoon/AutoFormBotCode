@@ -2,13 +2,29 @@
 
 echo "🌐 Setting up AutoFormBot Web Server..." | tee /dev/tty1
 echo "🌍 Setting Wi-Fi regulatory domain to KR..." | tee /dev/tty1
+echo "🔓 Unblocking Wi-Fi via rfkill..." | tee /dev/tty1
+sudo rfkill unblock wifi
+sudo rfkill unblock all
 sudo iw reg set KR
-if [ -f /etc/wpa_supplicant/wpa_supplicant.conf ]; then
-    sudo sed -i 's/^#\?country=.*/country=KR/' /etc/wpa_supplicant/wpa_supplicant.conf
-else
-    echo "⚠️  /etc/wpa_supplicant/wpa_supplicant.conf not found, creating with KR country..." | tee /dev/tty1
-    echo "country=KR" | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf > /dev/null
+WPA_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
+if [ ! -f "$WPA_CONF" ]; then
+    echo "⚠️  $WPA_CONF not found, creating with country=KR..." | tee /dev/tty1
+    echo "country=KR" | sudo tee "$WPA_CONF" > /dev/null
+elif ! grep -q "^country=KR" "$WPA_CONF"; then
+    echo "✏️  Updating country code in $WPA_CONF..." | tee /dev/tty1
+    sudo sed -i 's/^#\?country=.*/country=KR/' "$WPA_CONF"
 fi
+echo "🗺 Setting country in NetworkManager config..." | tee /dev/tty1
+sudo mkdir -p /etc/NetworkManager/conf.d
+sudo tee /etc/NetworkManager/conf.d/99-country.conf > /dev/null <<NMCONF
+  [device]
+  wifi.scan-rand-mac-address=no
+
+  [regulatory]
+  country=KR
+NMCONF
+
+sudo systemctl restart NetworkManager
 
 # 1. Install required system packages
 echo "📦 Installing system dependencies..." | tee /dev/tty1
