@@ -94,10 +94,18 @@ EOF
   sleep 2
 }
 
-# Ensure interface is in AP mode before starting hostapd
+echo "🔧 Setting $WIFI_INTERFACE to AP mode..."
 sudo ip link set "$WIFI_INTERFACE" down
 sudo iw dev "$WIFI_INTERFACE" set type __ap
 sudo ip link set "$WIFI_INTERFACE" up
+
+MODE=$(iw dev "$WIFI_INTERFACE" info | grep type | awk '{print $2}')
+if [ "$MODE" != "__ap" ] && [ "$MODE" != "AP" ]; then
+  echo "❌ Failed to set $WIFI_INTERFACE to AP mode (current mode: $MODE)"
+  exit 1
+else
+  echo "✅ $WIFI_INTERFACE set to AP mode."
+fi
 
 # Check for nearby known SSID from NetworkManager
 KNOWN_SSIDS=$(nmcli connection show | grep wifi | awk '{print $1}')
