@@ -47,7 +47,7 @@ if [ ! -f "$WEB_SCRIPT" ]; then
     cat > "$WEB_SCRIPT" <<PYEOF
 from flask import Flask, request, render_template_string
 import subprocess
-import os
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -86,7 +86,9 @@ def index():
         subprocess.run([
             "nmcli", "connection", "up", ssid
         ])
-        subprocess.run(["/home/" + os.getlogin() + "/AutoFormBotCode/scripts/nmservice/04_auto_wifi_or_ap.sh"])
+        # Use Path.home() for user-agnostic path resolution
+        script_path = str(Path.home() / "AutoFormBotCode/scripts/nmservice/04_auto_wifi_or_ap.sh")
+        subprocess.run([script_path])
         return f"<p>Saved and attempted connection to {ssid}. Please check status.</p><a href='/'>Back</a>"
     return render_template_string(html)
 
