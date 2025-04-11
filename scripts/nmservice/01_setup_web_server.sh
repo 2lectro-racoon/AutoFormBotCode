@@ -74,17 +74,17 @@ def index():
 
         # Create a NetworkManager connection manually
         subprocess.run([
-            "nmcli", "connection", "add", "type", "wifi", "con-name", ssid,
+            "sudo", "nmcli", "connection", "add", "type", "wifi", "con-name", ssid,
             "ifname", "wlan0", "ssid", ssid
         ])
         subprocess.run([
-            "nmcli", "connection", "modify", ssid,
+            "sudo", "nmcli", "connection", "modify", ssid,
             "wifi-sec.key-mgmt", "wpa-psk",
             "wifi-sec.psk", psk
         ])
         # Now attempt to connect
         subprocess.run([
-            "nmcli", "connection", "up", ssid
+            "sudo", "nmcli", "connection", "up", ssid
         ])
         # Use Path.home() for user-agnostic path resolution
         script_path = str(Path.home() / "AutoFormBotCode/scripts/nmservice/04_auto_wifi_or_ap.sh")
