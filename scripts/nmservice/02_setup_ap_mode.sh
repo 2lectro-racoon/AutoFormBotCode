@@ -38,6 +38,8 @@ EOF
 echo "🌐 Setting static IP for wlan0..."
 sudo rfkill unblock wifi
 sudo ip link set wlan0 down
+sudo iw dev wlan0 set type __ap
+sudo iw dev wlan0 set channel 6
 sudo ip addr flush dev wlan0
 sudo ip addr add 192.168.4.1/24 dev wlan0
 sudo ip link set wlan0 up
