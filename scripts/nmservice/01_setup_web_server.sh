@@ -1,6 +1,9 @@
 #!/bin/bash
 
 echo "🌐 Setting up AutoFormBot Web Server..." | tee /dev/tty1
+echo "🌍 Setting Wi-Fi regulatory domain to KR..." | tee /dev/tty1
+sudo iw reg set KR
+sudo sed -i 's/^#\?country=.*/country=KR/' /etc/wpa_supplicant/wpa_supplicant.conf
 
 # 1. Install required system packages
 echo "📦 Installing system dependencies..." | tee /dev/tty1
