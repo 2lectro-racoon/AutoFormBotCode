@@ -3,7 +3,11 @@
 echo "🌐 Setting up AutoFormBot Web Server..." | tee /dev/tty1
 echo "🌍 Setting Wi-Fi regulatory domain to KR..." | tee /dev/tty1
 sudo iw reg set KR
-sudo sed -i 's/^#\?country=.*/country=KR/' /etc/wpa_supplicant/wpa_supplicant.conf
+if [ -f /etc/wpa_supplicant/wpa_supplicant.conf ]; then
+    sudo sed -i 's/^#\?country=.*/country=KR/' /etc/wpa_supplicant/wpa_supplicant.conf
+else
+    echo "⚠️  /etc/wpa_supplicant/wpa_supplicant.conf not found, skipping country setting." | tee /dev/tty1
+fi
 
 # 1. Install required system packages
 echo "📦 Installing system dependencies..." | tee /dev/tty1
