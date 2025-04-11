@@ -99,6 +99,21 @@ sudo ip link set "$WIFI_INTERFACE" down
 sudo iw dev "$WIFI_INTERFACE" set type __ap
 sudo ip link set "$WIFI_INTERFACE" up
 
+# Confirm interface is actually set to AP mode
+ACTUAL_MODE=$(iw dev "$WIFI_INTERFACE" info | grep type | awk '{print $2}')
+if [ "$ACTUAL_MODE" != "AP" ]; then
+  echo "⚠️  Interface mode is not AP. Retrying set to AP..."
+  sudo ip link set "$WIFI_INTERFACE" down
+  sudo iw dev "$WIFI_INTERFACE" set type __ap
+  sudo ip link set "$WIFI_INTERFACE" up
+  ACTUAL_MODE=$(iw dev "$WIFI_INTERFACE" info | grep type | awk '{print $2}')
+  if [ "$ACTUAL_MODE" != "AP" ]; then
+    echo "❌ Failed to switch $WIFI_INTERFACE to AP mode even after retry. Aborting."
+    exit 1
+  fi
+fi
+echo "✅ Verified: $WIFI_INTERFACE is now in AP mode."
+
 MODE=$(iw dev "$WIFI_INTERFACE" info | grep type | awk '{print $2}')
 if [ "$MODE" != "__ap" ] && [ "$MODE" != "AP" ]; then
   echo "❌ Failed to set $WIFI_INTERFACE to AP mode (current mode: $MODE)"
