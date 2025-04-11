@@ -1,6 +1,23 @@
 #!/bin/bash
-# Set regulatory domain to US for consistent AP behavior
-sudo iw reg set US
+# Ensure regulatory domain is persistently set via systemd service
+echo "🔧 Creating regulatory domain service..."
+cat <<EOF | sudo tee /etc/systemd/system/set-regdom.service > /dev/null
+[Unit]
+Description=Set Wi-Fi regulatory domain
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/iw reg set US
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reexec
+sudo systemctl enable set-regdom.service
+sudo systemctl start set-regdom.service
 
 # Unblock Wi-Fi in case it was disabled by previous state
 sudo rfkill unblock wifi
