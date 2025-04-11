@@ -186,6 +186,7 @@ if [ -n "$KNOWN_SSID" ]; then
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
+    sudo sed -i 's/^channel=.*/channel=6/' /etc/hostapd/hostapd.conf
     sudo systemctl start dnsmasq
     sudo systemctl unmask hostapd
     sudo systemctl start hostapd
@@ -205,6 +206,7 @@ else
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
+  sudo sed -i 's/^channel=.*/channel=6/' /etc/hostapd/hostapd.conf
   sudo systemctl start dnsmasq
   sudo systemctl unmask hostapd
   sudo systemctl start hostapd
