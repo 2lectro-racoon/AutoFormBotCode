@@ -86,7 +86,9 @@ done
 if [[ -n "$SSID_FOUND" ]]; then
   echo "✅ Known SSID '$SSID_FOUND' found. Connecting to it..."
   enable_sta_mode
-  sudo nmcli con up "$SSID_FOUND"
+  echo "🔗 Bringing up connection on $INTERFACE for SSID '$SSID_FOUND'..."
+  sleep 2
+  sudo nmcli con up "$SSID_FOUND" ifname $INTERFACE
 else
   echo "🚫 No known SSID found. Starting AP mode..."
   enable_ap_mode
