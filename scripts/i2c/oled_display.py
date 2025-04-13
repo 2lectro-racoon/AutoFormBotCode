@@ -19,9 +19,16 @@ def get_mode_and_info():
         # Get SSID
         ssid = "N/A"
         try:
-            ssid = subprocess.check_output(
-                "iw dev wlan0 link | grep SSID | awk '{print $2}'",
-                shell=True).decode().strip()
+            if mode == "STA":
+                ssid = subprocess.check_output(
+                    "iw dev wlan0 link | grep SSID | awk '{print $2}'",
+                    shell=True).decode().strip()
+            elif mode == "AP":
+                with open("/etc/hostapd/hostapd.conf") as f:
+                    for line in f:
+                        if line.startswith("ssid="):
+                            ssid = line.strip().split("=")[1]
+                            break
         except:
             pass
 
@@ -50,9 +57,8 @@ def display_info():
                 draw.text((0, 0), f"{ssid}", font=font, fill=255)
                 draw.text((0, 16), f"{ip}", font=font, fill=255)
             else:
-                draw.text((0, 0), f"Mode: {mode}", font=font, fill=255)
-                draw.text((0, 16), f"SSID: {ssid}", font=font, fill=255)
-                draw.text((0, 28), f"IP: {ip}", font=font, fill=255)
+                draw.text((0, 0), f"SSID: {ssid}", font=font, fill=255)
+                draw.text((0, 16), f"192.168.1.4:8080", font=font, fill=255)
         time.sleep(5)
 
 if __name__ == "__main__":
