@@ -5,6 +5,21 @@ echo "🔄 Auto Wi-Fi/AP mode switching script starting..."
 # Get AutoFormBot root path dynamically
 AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+# Wait until wlan0 interface appears
+echo "⏳ Waiting for $INTERFACE to become available..."
+for i in {1..10}; do
+    if ip link show "$INTERFACE" &>/dev/null; then
+        echo "✅ $INTERFACE is available."
+        break
+    fi
+    sleep 1
+done
+
+if ! ip link show "$INTERFACE" &>/dev/null; then
+    echo "❌ $INTERFACE not found. Exiting."
+    exit 1
+fi
+
 
 # Wi-Fi interface
 INTERFACE="wlan0"
