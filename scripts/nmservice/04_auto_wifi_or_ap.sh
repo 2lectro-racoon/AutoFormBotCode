@@ -59,6 +59,8 @@ enable_ap_mode() {
 # Ensure wlan0 is in managed mode before checking status
 CURRENT_MODE=$(iw dev $INTERFACE info | grep type | awk '{print $2}')
 if [[ "$CURRENT_MODE" != "managed" ]]; then
+  sudo rm -f /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
+  sudo systemctl restart NetworkManager
   echo "🔁 Converting $INTERFACE to managed mode for scanning..."
   sudo ip link set $INTERFACE down
   sleep 1
