@@ -1,12 +1,17 @@
 #!/bin/bash
 
-VENV_PATH="$HOME/autoformbot_oled_venv"
-OLED_SCRIPT_PATH="$HOME/AutoFormBotCode/scripts/oled_display_status.py"
+USER_HOME=$(eval echo ~${SUDO_USER:-$USER})
+VENV_PATH="$USER_HOME/autoformbot_oled_venv"
+OLED_SCRIPT_PATH="$USER_HOME/AutoFormBotCode/scripts/i2c/oled_display_status.py"
 
 # ✅ Check if virtual environment already exists
 if [ ! -d "$VENV_PATH" ]; then
     echo "🔧 Creating Python virtual environment at $VENV_PATH"
     python3 -m venv "$VENV_PATH"
+    if [ ! -f "$VENV_PATH/bin/python3" ]; then
+        echo "❌ Failed to create virtual environment. Exiting."
+        exit 1
+    fi
 else
     echo "📂 Virtual environment already exists. Skipping creation."
 fi
@@ -21,4 +26,4 @@ pip install adafruit-circuitpython-ssd1306 adafruit-blinka
 # 🎉 Done
 echo "✅ Virtual environment setup complete."
 echo "⚡ To run OLED script manually:"
-echo "    source ~/autoformbot_oled_venv/bin/activate && python $OLED_SCRIPT_PATH"
+echo "    source \"$VENV_PATH/bin/activate\" && python \"$OLED_SCRIPT_PATH\""
