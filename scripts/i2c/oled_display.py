@@ -40,14 +40,19 @@ def display_info():
     serial = i2c(port=1, address=0x3C)
     device = ssd1306(serial)
 
-    font = ImageFont.load_default()
+    # Use a larger TrueType font
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
 
     while True:
         mode, ssid, ip = get_mode_and_info()
         with canvas(device) as draw:
-            draw.text((0, 0), f"Mode: {mode}", font=font, fill=255)
-            draw.text((0, 12), f"SSID: {ssid}", font=font, fill=255)
-            draw.text((0, 24), f"IP: {ip}", font=font, fill=255)
+            if mode == "STA":
+                draw.text((0, 0), f"{ssid}", font=font, fill=255)
+                draw.text((0, 16), f"{ip}", font=font, fill=255)
+            else:
+                draw.text((0, 0), f"Mode: {mode}", font=font, fill=255)
+                draw.text((0, 16), f"SSID: {ssid}", font=font, fill=255)
+                draw.text((0, 28), f"IP: {ip}", font=font, fill=255)
         time.sleep(5)
 
 if __name__ == "__main__":
