@@ -2,7 +2,7 @@
 
 USER_HOME=$(eval echo ~${SUDO_USER:-$USER})
 VENV_PATH="$USER_HOME/.oledenv"
-OLED_SCRIPT_PATH="$USER_HOME/AutoFormBotCode/scripts/i2c/oled_display_status.py"
+OLED_SCRIPT_PATH="$USER_HOME/AutoFormBotCode/scripts/i2c/oled_display.py"
 
 # ✅ Check if virtual environment already exists
 if [ ! -d "$VENV_PATH" ]; then
