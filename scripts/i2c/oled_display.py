@@ -38,7 +38,7 @@ def get_mode_and_info():
 
 def display_info():
     serial = i2c(port=1, address=0x3C)
-    device = ssd1306(serial)
+    device = ssd1306(serial, height=32)
 
     # Use a larger TrueType font
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
