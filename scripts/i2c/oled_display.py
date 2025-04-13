@@ -59,7 +59,7 @@ def display_info():
                 draw.text((0, 16), f"{ip}", font=font, fill=255)
             else:
                 draw.text((0, 0), f"{ssid}", font=font, fill=255)
-                draw.text((0, 16), f"192.168.1.4:8080", font=font, fill=255)
+                draw.text((0, 16), f"{ip}", font=font, fill=255)
         time.sleep(5)
 
 if __name__ == "__main__":
