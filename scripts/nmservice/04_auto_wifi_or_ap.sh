@@ -2,9 +2,9 @@
 
 echo "🔄 Auto Wi-Fi/AP mode switching script starting..."
 
-# Get current user dynamically
-CURRENT_USER=$(logname)
-HOME_DIR=$(eval echo "~$CURRENT_USER")
+# Get AutoFormBot root path dynamically
+AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 
 # Wi-Fi interface
 INTERFACE="wlan0"
