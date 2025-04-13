@@ -56,6 +56,18 @@ enable_ap_mode() {
   sudo systemctl start hostapd
 }
 
+# Ensure wlan0 is in managed mode before checking status
+CURRENT_MODE=$(iw dev $INTERFACE info | grep type | awk '{print $2}')
+if [[ "$CURRENT_MODE" != "managed" ]]; then
+  echo "🔁 Converting $INTERFACE to managed mode for scanning..."
+  sudo ip link set $INTERFACE down
+  sleep 1
+  sudo iw dev $INTERFACE set type managed
+  sleep 1
+  sudo ip link set $INTERFACE up
+  sudo nmcli dev set $INTERFACE managed yes
+fi
+
 # Check if wlan0 is up
 echo "⏳ Waiting for wlan0 to be UP..."
 for i in {1..5}; do
