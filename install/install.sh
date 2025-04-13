@@ -7,5 +7,10 @@ AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 bash "$AUTOFORM_PATH/scripts/nmservice/01_setup_web_server.sh"
 bash "$AUTOFORM_PATH/scripts/nmservice/05_enable_auto_wifi_service.sh"
 bash "$AUTOFORM_PATH/scripts/nmservice/07_enable_wifi_monitor.sh"
+bash "$AUTOFORM_PATH/scripts/i2c/01_install.sh"
+bash "$AUTOFORM_PATH/scripts/i2c/02_oled_service.sh"
+bash "$AUTOFORM_PATH/scripts/gpio/01_servo_stop.sh"
 
 echo "AutoFormBot Auto Wi-Fi/AP mode switching script installed..."
+
+sudo reboot
