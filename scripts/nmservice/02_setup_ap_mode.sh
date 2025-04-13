@@ -49,6 +49,7 @@ echo "🌐 Setting static IP for wlan0..."
 sudo rfkill unblock wifi
 sudo ip link set wlan0 down
 sudo iw dev wlan0 set type __ap
+sleep 1
 sudo iw dev wlan0 set channel 6
 sudo ip addr flush dev wlan0
 sudo ip addr add 192.168.4.1/24 dev wlan0
@@ -56,22 +57,15 @@ sudo ip link set wlan0 up
 
 echo "⚙️ Updating NetworkManager unmanaged settings..."
 sudo mkdir -p /etc/NetworkManager/conf.d
-if [ ! -f /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf ]; then
-    echo "⚙️ Creating unmanaged wlan0 config..."
-    echo -e "[keyfile]\nunmanaged-devices=interface-name:wlan0" | sudo tee /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
-    sudo systemctl restart NetworkManager
-else
-    echo "⚙️ unmanaged wlan0 config already exists."
-fi
+UNMANAGED_CONF=/etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
+echo -e "[keyfile]\nunmanaged-devices=interface-name:wlan0" | sudo tee "$UNMANAGED_CONF" > /dev/null
+sudo systemctl restart NetworkManager
 
 for svc in hostapd dnsmasq; do
-    if ! systemctl is-active --quiet "$svc"; then
-        echo "🚀 Starting $svc service..."
-        sudo systemctl enable "$svc"
-        sudo systemctl start "$svc"
-    else
-        echo "✅ $svc service is already running."
-    fi
+    echo "🔍 Ensuring $svc is unmasked and enabled..."
+    sudo systemctl unmask "$svc"
+    sudo systemctl enable "$svc"
+    sudo systemctl restart "$svc"
 done
 
 echo "✅ AP mode setup complete."
