@@ -12,10 +12,13 @@ sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
 Description=OLED Display Info Service
 After=network-online.target
+DefaultDependencies=no
+Before=shutdown.target
 
 [Service]
 Type=simple
 ExecStart=$PYTHON_PATH $SCRIPT_PATH
+ExecStop=$PYTHON_PATH /home/$USER_NAME/AutoFormBotCode/scripts/i2c/oled_clear.py
 Restart=always
 User=$USER_NAME
 Environment=PYTHONUNBUFFERED=1
