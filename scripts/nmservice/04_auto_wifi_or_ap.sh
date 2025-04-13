@@ -5,6 +5,12 @@ echo "🔄 Auto Wi-Fi/AP mode switching script starting..."
 # Get AutoFormBot root path dynamically
 AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+# Wi-Fi interface
+INTERFACE="wlan0"
+AP_SSID="AutoFormBotpi-setup"
+AP_IP="192.168.4.1"
+CHANNEL="6"
+
 # Wait until wlan0 interface appears
 echo "⏳ Waiting for $INTERFACE to become available..."
 for i in {1..10}; do
@@ -20,12 +26,6 @@ if ! ip link show "$INTERFACE" &>/dev/null; then
     exit 1
 fi
 
-
-# Wi-Fi interface
-INTERFACE="wlan0"
-AP_SSID="AutoFormBotpi-setup"
-AP_IP="192.168.4.1"
-CHANNEL="6"
 
 # Known SSIDs to check for (you can make this dynamic or load from a file)
 KNOWN_SSIDS=$(nmcli -t -f NAME connection show)
