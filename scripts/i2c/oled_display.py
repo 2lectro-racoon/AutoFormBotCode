@@ -34,8 +34,9 @@ def get_mode_and_info():
 
         # Get IP
         ip = "No IP"
-        if 'wlan0' in netifaces.interfaces():
-            addrs = netifaces.ifaddresses('wlan0')
+        interface = 'wlan0' if mode == "STA" else 'eth0'
+        if interface in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(interface)
             if netifaces.AF_INET in addrs:
                 ip = addrs[netifaces.AF_INET][0]['addr']
 
@@ -57,7 +58,7 @@ def display_info():
                 draw.text((0, 0), f"{ssid}", font=font, fill=255)
                 draw.text((0, 16), f"{ip}", font=font, fill=255)
             else:
-                draw.text((0, 0), f"SSID: {ssid}", font=font, fill=255)
+                draw.text((0, 0), f"{ssid}", font=font, fill=255)
                 draw.text((0, 16), f"192.168.1.4:8080", font=font, fill=255)
         time.sleep(5)
 
