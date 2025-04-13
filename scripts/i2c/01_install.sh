@@ -21,7 +21,7 @@ source "$VENV_PATH/bin/activate"
 
 # 📦 Install OLED dependencies
 pip install --upgrade pip
-pip install adafruit-circuitpython-ssd1306 adafruit-blinka
+pip install netifaces adafruit-circuitpython-ssd1306 adafruit-blinka
 
 # 🎉 Done
 echo "✅ Virtual environment setup complete."
