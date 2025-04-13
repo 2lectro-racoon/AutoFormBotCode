@@ -72,7 +72,10 @@ def index():
         ssid = request.form["ssid"]
         psk = request.form["psk"]
 
-        # Create a NetworkManager connection manually
+        # Delete any existing connection
+        subprocess.run(["sudo", "nmcli", "connection", "delete", ssid])
+
+        # Create and configure the connection
         subprocess.run([
             "sudo", "nmcli", "connection", "add", "type", "wifi", "con-name", ssid,
             "ifname", "wlan0", "ssid", ssid
@@ -82,13 +85,12 @@ def index():
             "wifi-sec.key-mgmt", "wpa-psk",
             "wifi-sec.psk", psk
         ])
-        # Now attempt to connect
         subprocess.run([
             "sudo", "nmcli", "connection", "up", ssid
         ])
-        # Use Path.home() for user-agnostic path resolution
+
         script_path = str(Path.home() / "AutoFormBotCode/scripts/nmservice/04_auto_wifi_or_ap.sh")
-        subprocess.run([script_path])
+        subprocess.run(["sudo", script_path])
         return f"<p>Saved and attempted connection to {ssid}. Please check status.</p><a href='/'>Back</a>"
     return render_template_string(html)
 
