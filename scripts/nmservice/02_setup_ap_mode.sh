@@ -9,8 +9,7 @@ AUTOFORM_PATH="$USER_HOME/AutoFormBotCode"
 
 echo "🔧 Setting up Access Point mode..."
 
-echo "📁 Creating hostapd config..."
-sudo tee /etc/hostapd/hostapd.conf &> /dev/null <<EOF
+HOSTAPD_CONF_CONTENT=$(cat <<EOF
 interface=wlan0
 driver=nl80211
 ssid=AutoFormBotpi-setup
@@ -26,14 +25,29 @@ wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
+)
+echo "$HOSTAPD_CONF_CONTENT" | sudo tee /tmp/hostapd_tmp.conf > /dev/null
+if ! sudo cmp -s /tmp/hostapd_tmp.conf /etc/hostapd/hostapd.conf 2>/dev/null; then
+    echo "📁 Updating hostapd config..."
+    sudo cp /tmp/hostapd_tmp.conf /etc/hostapd/hostapd.conf
+else
+    echo "📁 hostapd config already up-to-date."
+fi
 
 echo "CONFIG_FILE=/etc/hostapd/hostapd.conf" | sudo tee /etc/default/hostapd &> /dev/null
 
-echo "📁 Creating dnsmasq config..."
-sudo tee /etc/dnsmasq.conf &> /dev/null <<EOF
+DNSMASQ_CONF_CONTENT=$(cat <<EOF
 interface=wlan0
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
+)
+echo "$DNSMASQ_CONF_CONTENT" | sudo tee /tmp/dnsmasq_tmp.conf > /dev/null
+if ! sudo cmp -s /tmp/dnsmasq_tmp.conf /etc/dnsmasq.conf 2>/dev/null; then
+    echo "📁 Updating dnsmasq config..."
+    sudo cp /tmp/dnsmasq_tmp.conf /etc/dnsmasq.conf
+else
+    echo "📁 dnsmasq config already up-to-date."
+fi
 
 echo "🌐 Setting static IP for wlan0..."
 sudo rfkill unblock wifi
@@ -46,14 +60,22 @@ sudo ip link set wlan0 up
 
 echo "⚙️ Updating NetworkManager unmanaged settings..."
 sudo mkdir -p /etc/NetworkManager/conf.d
-echo -e "[keyfile]\nunmanaged-devices=interface-name:wlan0" | sudo tee /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
-sudo systemctl restart NetworkManager
+if [ ! -f /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf ]; then
+    echo "⚙️ Creating unmanaged wlan0 config..."
+    echo -e "[keyfile]\nunmanaged-devices=interface-name:wlan0" | sudo tee /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
+    sudo systemctl restart NetworkManager
+else
+    echo "⚙️ unmanaged wlan0 config already exists."
+fi
 
-echo "🚀 Enabling AP services..."
-sudo systemctl unmask hostapd
-sudo systemctl enable hostapd
-sudo systemctl start hostapd
-sudo systemctl enable dnsmasq
-sudo systemctl start dnsmasq
+for svc in hostapd dnsmasq; do
+    if ! systemctl is-active --quiet "$svc"; then
+        echo "🚀 Starting $svc service..."
+        sudo systemctl enable "$svc"
+        sudo systemctl start "$svc"
+    else
+        echo "✅ $svc service is already running."
+    fi
+done
 
 echo "✅ AP mode setup complete."
