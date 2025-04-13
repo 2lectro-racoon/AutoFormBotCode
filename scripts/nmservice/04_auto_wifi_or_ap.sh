@@ -15,46 +15,60 @@ CHANNEL="6"
 # Known SSIDs to check for (you can make this dynamic or load from a file)
 KNOWN_SSIDS=$(nmcli -t -f NAME connection show)
 
-# Function to enable STA mode
-enable_sta_mode() {
-  echo "📡 Switching to STA mode..."
-
-  # Stop AP services
-  sudo systemctl stop hostapd
-  sudo systemctl stop dnsmasq
-
-  # Restore managed mode
-  sudo ip link set $INTERFACE down
-  sudo iw dev $INTERFACE set type managed
-  sudo ip link set $INTERFACE up
-
-  # Remove unmanaged config
-  sudo rm -f /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
-  sudo systemctl restart NetworkManager
-}
-
-# Function to enable AP mode
 enable_ap_mode() {
   echo "📶 Switching to AP mode..."
-
-  # Set unmanaged for NetworkManager
-  sudo mkdir -p /etc/NetworkManager/conf.d
-  echo -e "[keyfile]\nunmanaged-devices=interface-name:$INTERFACE" | sudo tee /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
-
-  # Restart NetworkManager to apply
-  sudo systemctl restart NetworkManager
-
-  # Set interface mode to AP
-  sudo ip link set $INTERFACE down
-  sudo iw dev $INTERFACE set type __ap
-  sudo ip addr flush dev $INTERFACE
-  sudo ip addr add ${AP_IP}/24 dev $INTERFACE
-  sudo ip link set $INTERFACE up
-
-  # Start AP services
-  sudo systemctl start dnsmasq
-  sudo systemctl start hostapd
+  bash "$AUTOFORM_PATH/scripts/nmservice/02_setup_ap_mode.sh"
 }
+
+enable_sta_mode() {
+  echo "📡 Switching to STA mode..."
+  bash "$AUTOFORM_PATH/scripts/nmservice/03_setup_sta_mode.sh"
+}
+
+# Call enable_ap_mode or enable_sta_mode based on your decision logic
+# enable_ap_mode
+# enable_sta_mode
+
+# Function to enable STA mode
+# enable_sta_mode() {
+#   echo "📡 Switching to STA mode..."
+
+#   # Stop AP services
+#   sudo systemctl stop hostapd
+#   sudo systemctl stop dnsmasq
+
+#   # Restore managed mode
+#   sudo ip link set $INTERFACE down
+#   sudo iw dev $INTERFACE set type managed
+#   sudo ip link set $INTERFACE up
+
+#   # Remove unmanaged config
+#   sudo rm -f /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
+#   sudo systemctl restart NetworkManager
+# }
+
+# # Function to enable AP mode
+# enable_ap_mode() {
+#   echo "📶 Switching to AP mode..."
+
+#   # Set unmanaged for NetworkManager
+#   sudo mkdir -p /etc/NetworkManager/conf.d
+#   echo -e "[keyfile]\nunmanaged-devices=interface-name:$INTERFACE" | sudo tee /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
+
+#   # Restart NetworkManager to apply
+#   sudo systemctl restart NetworkManager
+
+#   # Set interface mode to AP
+#   sudo ip link set $INTERFACE down
+#   sudo iw dev $INTERFACE set type __ap
+#   sudo ip addr flush dev $INTERFACE
+#   sudo ip addr add ${AP_IP}/24 dev $INTERFACE
+#   sudo ip link set $INTERFACE up
+
+#   # Start AP services
+#   sudo systemctl start dnsmasq
+#   sudo systemctl start hostapd
+# }
 
 # Ensure wlan0 is in managed mode before checking status
 CURRENT_MODE=$(iw dev $INTERFACE info | grep type | awk '{print $2}')
