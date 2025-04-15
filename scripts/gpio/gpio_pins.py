@@ -1,6 +1,6 @@
 # gpio_pins.py
 
-# frozen 설정: 값을 바꿀 수 없도록 제한된 네임스페이스
+# frozen namespace: disallows modification of predefined values
 from types import SimpleNamespace
 
 class FrozenNamespace(SimpleNamespace):
