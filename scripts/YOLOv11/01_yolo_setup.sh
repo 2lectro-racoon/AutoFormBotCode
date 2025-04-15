@@ -12,6 +12,7 @@ fi
 source AutoFormBot_venv/bin/activate
 # 2. Install ultralytics Yolov11
 pip install --upgrade pip
+pip install matplotlib pandas pillow psutil py-cpuinfo pyyaml scipy seaborn torch torchvision tqdm ultralytics-thop
 pip install ultralytics==8.3.104  --no-deps
 
 echo "✅ Ultralytics YOLOv11 install complete!"
