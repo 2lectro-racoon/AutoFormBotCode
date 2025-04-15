@@ -17,9 +17,7 @@ sudo apt install -y \
     libxvidcore-dev \
     libx264-dev \
     libgtk-3-dev \
-    libcanberra-gtk* \
-    libqtgui4 \
-    libqt4-test
+    libcanberra-gtk*
 
 # 1. Create and activate virtual environment
 if [ -d "AutoFormBot_venv" ]; then
@@ -30,9 +28,9 @@ else
 fi
 source AutoFormBot_venv/bin/activate
 
-# 2. Install opencv-python-contrib 4.8.1.78
+# 2. Install opencv-contrib-python 4.8.1.78
 pip install --upgrade pip
-pip install opencv-python-contrib==4.8.1.78
+pip install opencv-contrib-python==4.8.1.78
 
 echo "✅ opencv install complete!"
 echo "🔄 Virtual environment 'AutoFormBot_venv' is ready."
