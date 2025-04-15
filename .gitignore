@@ -1,0 +1,11 @@
+# venv 
+AutoFormBot_venv/
+
+# STA / AP server
+webserver/
+
+# vscode setting
+.vscode/
+
+# OS file sys
+.DS_Store
