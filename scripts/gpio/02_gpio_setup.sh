@@ -7,7 +7,7 @@ if [ -d "AutoFormBot_venv" ]; then
     echo "🔁 Virtual environment 'AutoFormBot_venv' already exists. Activating..."
 else
     echo "🆕 Creating virtual environment 'AutoFormBot_venv'..."
-    python3 -m venv AutoFormBot_venv
+    python3.11 -m venv AutoFormBot_venv
 fi
 source AutoFormBot_venv/bin/activate
 
