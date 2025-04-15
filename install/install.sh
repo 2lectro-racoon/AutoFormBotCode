@@ -1,4 +1,8 @@
 #!/bin/bash
+set -e
+
+LOG_FILE="install_log_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "AutoFormBot Auto Wi-Fi/AP mode switching script install..."
 

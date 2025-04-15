@@ -9,3 +9,6 @@ webserver/
 
 # OS file sys
 .DS_Store
+
+# log
+install/install_log_*.log

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "📦 Installing Ultralytics YOLOv11 and Python virtual environment..."
+echo "📦 Installing Pillow and Python virtual environment..."
 
 # 1. Create and activate virtual environment
 if [ -d "AutoFormBot_venv" ]; then
@@ -10,11 +10,11 @@ else
     python3.11 -m venv AutoFormBot_venv
 fi
 source AutoFormBot_venv/bin/activate
-# 2. Install ultralytics Yolov11
+# 2. Install Pillow
 pip install --upgrade pip
-pip install ultralytics==8.3.104  --no-deps
+pip install Pillow==9.4.0
 
-echo "✅ Ultralytics YOLOv11 install complete!"
+echo "✅ Pillow install complete!"
 echo "🔄 Virtual environment 'AutoFormBot_venv' is ready."
 
 deactivate
