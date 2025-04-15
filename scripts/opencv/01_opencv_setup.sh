@@ -29,6 +29,8 @@ else
     python3.11 -m venv AutoFormBot_venv
 fi
 source AutoFormBot_venv/bin/activate
+
+# 2. Install opencv-python-contrib 4.8.1.78
 pip install --upgrade pip
 pip install opencv-python-contrib==4.8.1.78
 
