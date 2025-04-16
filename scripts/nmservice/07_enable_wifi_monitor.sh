@@ -1,22 +1,36 @@
 #!/bin/bash
-sudo cp /home/$USER/AutoFormBotCode/scripts/nmservice/06_wifi_monitor.sh /usr/local/bin/autoformbot_wifi_monitor.sh
-sudo chmod +x /usr/local/bin/autoformbot_wifi_monitor.sh
 
-cat <<EOF | sudo tee /etc/systemd/system/autoformbot_wifi_monitor.service
+echo "📶 Setting up AutoFormBot Wi-Fi Monitor service..."
+
+USER_NAME=$(whoami)
+SCRIPT_SRC="/home/$USER_NAME/AutoFormBotCode/scripts/nmservice/06_wifi_monitor.sh"
+SCRIPT_DEST="/usr/local/bin/autoformbot_wifi_monitor.sh"
+SERVICE_FILE="/etc/systemd/system/autoformbot_wifi_monitor.service"
+
+# Copy script to /usr/local/bin and make it executable
+sudo cp "$SCRIPT_SRC" "$SCRIPT_DEST"
+sudo chmod +x "$SCRIPT_DEST"
+
+# Create the systemd service file
+sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
 Description=AutoFormBot Wi-Fi Monitor
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/autoformbot_wifi_monitor.sh
+Type=simple
+ExecStart=$SCRIPT_DEST
 Restart=always
-User=$USER
+User=$USER_NAME
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+# Reload systemd and enable/start the service
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable autoformbot_wifi_monitor.service
 sudo systemctl start autoformbot_wifi_monitor.service
+
+echo "✅ AutoFormBot Wi-Fi Monitor service registered and started!"
