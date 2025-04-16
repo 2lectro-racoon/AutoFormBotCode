@@ -19,7 +19,7 @@ bash "$AUTOFORM_PATH/scripts/tflite/01_tflite_setup.sh"
 bash "$AUTOFORM_PATH/scripts/gpio/02_gpio_setup.sh"
 
 echo '# === Auto PYTHONPATH for AutoFormBotCode ===' >> /home/autoformbotpi/AutoFormBot_venv/bin/activate
-echo 'export AUTOBOT_ROOT="/home/autoformbotpi/AutoFormBot"' >> /home/autoformbotpi/AutoFormBot_venv/bin/activate
+echo 'export AUTOBOT_ROOT="/home/autoformbotpi/AutoFormBotCode"' >> /home/autoformbotpi/AutoFormBot_venv/bin/activate
 echo 'export PYTHONPATH="$AUTOBOT_ROOT/scripts/gpio:$AUTOBOT_ROOT/scripts/opencv:$AUTOBOT_ROOT/scripts/tflite:$AUTOBOT_ROOT/scripts/YOLOv11:$PYTHONPATH"' >> /home/autoformbotpi/AutoFormBot_venv/bin/activate
 
 bash "$AUTOFORM_PATH/scripts/gpio/01_servo_stop.sh"
