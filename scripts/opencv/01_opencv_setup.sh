@@ -30,7 +30,7 @@ source AutoFormBot_venv/bin/activate
 
 # 2. Install opencv-contrib-python 4.8.1.78
 pip install --upgrade pip
-pip install opencv-contrib-python==4.8.1.78
+pip install opencv-contrib-python==4.8.1.78 numpy==1.26.4
 
 echo "✅ opencv install complete!"
 echo "🔄 Virtual environment 'AutoFormBot_venv' is ready."
