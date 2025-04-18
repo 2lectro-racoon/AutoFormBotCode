@@ -53,7 +53,7 @@ sudo raspi-config
 ```
 3-I3(VNC)          Enable  
 3-I5(I2C)          Enable  
-3-I8(Remote GPIO)  Enable
+3-I8(Remote GPIO)  Enable  
 5-L4(WLAN Country) KR  
 
 Finsh  
