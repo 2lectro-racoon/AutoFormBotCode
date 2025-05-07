@@ -127,6 +127,12 @@ for SSID in $KNOWN_SSIDS; do
 done
 
 if [[ -n "$SSID_FOUND" ]]; then
+  SSID_ACTIVE=$(nmcli -t -f active,ssid dev wifi | grep "^yes" | cut -d: -f2)
+  if [[ "$SSID_ACTIVE" == "$SSID_FOUND" ]]; then
+    echo "✅ Already connected to '$SSID_FOUND'. Skipping reconnection."
+    exit 0
+  fi
+
   echo "✅ Known SSID '$SSID_FOUND' found. Connecting to it..."
   enable_sta_mode
   echo "🔗 Bringing up connection on $INTERFACE for SSID '$SSID_FOUND'..."
