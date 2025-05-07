@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "📡 Monitoring Wi-Fi status..."
-INTERFACE="wlan0"
+INTERFACE=$(iw dev | awk '$1=="Interface"{print $2}')
 
 while true; do
   STATE=$(nmcli -t -f GENERAL.STATE device show $INTERFACE | cut -d: -f2 | cut -d' ' -f1)
