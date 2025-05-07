@@ -54,12 +54,9 @@ def display_info():
     while True:
         mode, ssid, ip = get_mode_and_info()
         with canvas(device) as draw:
-            if mode == "STA":
-                draw.text((0, 0), f"{ssid}", font=font, fill=255)
-                draw.text((0, 16), f"{ip}", font=font, fill=255)
-            else:
-                draw.text((0, 0), f"{ssid}", font=font, fill=255)
-                draw.text((0, 16), f"{ip}", font=font, fill=255)
+            draw.text((0, 0), f"{mode}", font=font, fill=255)
+            draw.text((0, 16), f"{ssid}", font=font, fill=255)
+            draw.text((0, 32), f"{ip}", font=font, fill=255)
         time.sleep(5)
 
 if __name__ == "__main__":
