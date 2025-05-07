@@ -40,11 +40,11 @@ fi
 
 # 3. Ensure web script exists
 WEB_SCRIPT="$(eval echo ~$USER)/AutoFormBotCode/webserver/app.py"
-if [ ! -f "$WEB_SCRIPT" ]; then
-    echo "⚠️  Web server script not found: $WEB_SCRIPT" | tee /dev/tty1
-    echo "📄 Creating a default app.py for Flask..." | tee /dev/tty1
-    mkdir -p "$(dirname "$WEB_SCRIPT")"
-    cat > "$WEB_SCRIPT" <<PYEOF
+echo "📄 Checking and preparing app.py for Flask..." | tee /dev/tty1
+mkdir -p "$(dirname "$WEB_SCRIPT")"
+
+TMP_APP=$(mktemp)
+cat > "$TMP_APP" <<PYEOF
 from flask import Flask, request, render_template_string
 import subprocess
 from pathlib import Path
@@ -74,10 +74,8 @@ def index():
         psk = request.form["psk"]
         hidden = request.form.get("hidden") == "yes"
 
-        # Delete any existing connection
         subprocess.run(["sudo", "nmcli", "connection", "delete", ssid])
 
-        # Create and configure the connection
         subprocess.run([
             "sudo", "nmcli", "connection", "add", "type", "wifi", "con-name", ssid,
             "ifname", "wlan0", "ssid", ssid
@@ -106,7 +104,15 @@ def index():
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
 PYEOF
+
+if ! cmp -s "$TMP_APP" "$WEB_SCRIPT"; then
+    echo "✏️  Updating $WEB_SCRIPT with new version..." | tee /dev/tty1
+    cp "$TMP_APP" "$WEB_SCRIPT"
+else
+    echo "✅ $WEB_SCRIPT is already up to date." | tee /dev/tty1
 fi
+
+rm "$TMP_APP"
 
 # 4. Create systemd service file
 echo "🛠 Creating systemd service for web server..." | tee /dev/tty1
