@@ -96,6 +96,9 @@ def index():
             "sudo", "nmcli", "connection", "up", ssid
         ])
 
+        import time
+        time.sleep(10)  # Wait for connection to stabilize
+
         script_path = str(Path.home() / "AutoFormBotCode/scripts/nmservice/04_auto_wifi_or_ap.sh")
         subprocess.run(["sudo", script_path])
         return f"<p>Saved and attempted connection to {ssid}. Please check status.</p><a href='/'>Back</a>"
