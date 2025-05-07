@@ -132,8 +132,17 @@ if [[ -n "$SSID_FOUND" ]]; then
   echo "🔗 Bringing up connection on $INTERFACE for SSID '$SSID_FOUND'..."
   sleep 2
   sudo nmcli con up "$SSID_FOUND" ifname $INTERFACE
-  sleep 5
-  CONNECTED=$(nmcli -t -f GENERAL.STATE device show $INTERFACE | grep -oP '\d+')
+  # Wait up to 20 seconds for connection to stabilize
+  for i in {1..10}; do
+    CONNECTED=$(nmcli -t -f GENERAL.STATE device show $INTERFACE | grep -oP '\d+')
+    if [[ "$CONNECTED" -ge 70 ]]; then
+      echo "✅ Connection established to '$SSID_FOUND'."
+      break
+    fi
+    echo "⏳ Waiting for connection to '$SSID_FOUND'... ($i)"
+    sleep 2
+  done
+
   if [[ "$CONNECTED" -lt 70 ]]; then
     echo "❌ Connection to '$SSID_FOUND' failed. Falling back to AP mode..."
     enable_ap_mode
