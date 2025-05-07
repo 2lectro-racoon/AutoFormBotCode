@@ -58,8 +58,9 @@ html = """
 <body>
   <h2>Wi-Fi Setup</h2>
   <form action="/" method="POST">
-    SSID: <input type="text" name="ssid"><br>
-    Password: <input type="password" name="psk"><br>
+    SSID: <input type="text" name="ssid" required><br>
+    Password: <input type="password" name="psk" required><br>
+    <input type="checkbox" name="hidden" value="yes"> Hidden SSID<br>
     <input type="submit" value="Save">
   </form>
 </body>
@@ -71,6 +72,7 @@ def index():
     if request.method == "POST":
         ssid = request.form["ssid"]
         psk = request.form["psk"]
+        hidden = request.form.get("hidden") == "yes"
 
         # Delete any existing connection
         subprocess.run(["sudo", "nmcli", "connection", "delete", ssid])
@@ -85,6 +87,13 @@ def index():
             "wifi-sec.key-mgmt", "wpa-psk",
             "wifi-sec.psk", psk
         ])
+
+        if hidden:
+            subprocess.run([
+                "sudo", "nmcli", "connection", "modify", ssid,
+                "wifi.hidden", "yes"
+            ])
+
         subprocess.run([
             "sudo", "nmcli", "connection", "up", ssid
         ])
