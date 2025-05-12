@@ -1,10 +1,10 @@
 # gpio_control.py
 
-import pigpio
+import lgpio
 import atexit
 from gpio_pins import PINS
-# Create global pigpio instance
-pi = pigpio.pi()
+# Create global lgpio instance
+pi = lgpio.gpiochip_open(0)
 atexit.register(lambda: stop_all())
 
 # Initialization
@@ -12,27 +12,28 @@ def init_gpio():
     # Motor pins
     for pin in [PINS.M1_IN1, PINS.M1_IN2, PINS.M1_PWM,
                 PINS.M2_IN1, PINS.M2_IN2, PINS.M2_PWM, PINS.STBY]:
-        pi.set_mode(pin, pigpio.OUTPUT)
+        lgpio.gpio_claim_output(pi, pin, 0)
 
     # Servo
-    pi.set_mode(PINS.SERVO_PIN, pigpio.OUTPUT)
+    lgpio.gpio_claim_output(pi, PINS.SERVO_PIN, 0)
 
     # LEDs
-    pi.set_mode(PINS.LED_RIGHT, pigpio.OUTPUT)
-    pi.set_mode(PINS.LED_LEFT, pigpio.OUTPUT)
+    lgpio.gpio_claim_output(pi, PINS.LED_RIGHT, 0)
+    lgpio.gpio_claim_output(pi, PINS.LED_LEFT, 0)
 
     # Battery pins (optional input mode if needed)
     for pin in [PINS.BAT_100, PINS.BAT_75, PINS.BAT_50, PINS.BAT_25]:
-        pi.set_mode(pin, pigpio.INPUT)
+        lgpio.gpio_claim_input(pi, pin)
 
     # Motor enable
-    pi.write(PINS.STBY, 1)
+    lgpio.gpio_write(pi, PINS.STBY, 1)
 
 
 # Servo control (angle: 0 ~ 180)
 def set_servo_angle(angle):
     pulse = 500 + (angle / 180.0) * 2000  # 500~2500us
-    pi.set_servo_pulsewidth(PINS.SERVO_PIN, int(pulse))
+    duty = pulse / 20000 * 100.0
+    lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, duty)
 
 
 # Motor direction + speed
@@ -51,28 +52,31 @@ def set_motor_speed(motor_id, speed, inverse=1):
         raise ValueError("motor_id must be 1 or 2")
 
     if speed * inverse > 0:
-        pi.write(IN1, 1)
-        pi.write(IN2, 0)
+        lgpio.gpio_write(pi, IN1, 1)
+        lgpio.gpio_write(pi, IN2, 0)
     elif speed * inverse < 0:
-        pi.write(IN1, 0)
-        pi.write(IN2, 1)
+        lgpio.gpio_write(pi, IN1, 0)
+        lgpio.gpio_write(pi, IN2, 1)
     else:
-        pi.write(IN1, 0)
-        pi.write(IN2, 0)
+        lgpio.gpio_write(pi, IN1, 0)
+        lgpio.gpio_write(pi, IN2, 0)
 
-    pi.set_PWM_dutycycle(PWM, min(abs(speed), 255))
+    duty = min(abs(speed), 255) / 255 * 100.0
+    lgpio.tx_pwm(pi, PWM, 1000, duty)
 
 
 # LED control
 def set_led(left_on=False, right_on=False):
-    pi.write(PINS.LED_LEFT, 1 if left_on else 0)
-    pi.write(PINS.LED_RIGHT, 1 if right_on else 0)
+    lgpio.gpio_write(pi, PINS.LED_LEFT, 1 if left_on else 0)
+    lgpio.gpio_write(pi, PINS.LED_RIGHT, 1 if right_on else 0)
 
 
 # Clean shutdown
 def stop_all():
     set_motor_speed(1, 0)
     set_motor_speed(2, 0)
-    pi.set_servo_pulsewidth(PINS.SERVO_PIN, 0)
+    lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, 0)
     set_led(False, False)
-    pi.write(PINS.STBY, 0)
+    lgpio.gpio_write(pi, PINS.STBY, 0)
+    # Optionally close gpiochip
+    # lgpio.gpiochip_close(pi)

@@ -27,8 +27,8 @@ PINS = FrozenNamespace(
     M2_PWM  = 13,             # GPIO13: Motor 2 PWM
 
     # Battery Level LEDs
-    BAT_100 = 23,             # GPIO23: Battery 100%
-    BAT_75  = 24,             # GPIO24: Battery 75%
+    # BAT_100 = 23,             # GPIO23: Battery 100%
+    BAT_100  = 24,            # GPIO24: Battery 100%
     BAT_50  = 25,             # GPIO25: Battery 50%
-    BAT_25  = 27              # GPIO27: Battery 25%
+    BAT_10  = 27              # GPIO27: Battery 10%
 )

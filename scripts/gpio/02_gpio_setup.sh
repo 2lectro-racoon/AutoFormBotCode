@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "📦 Setting up pigpio and Python virtual environment..."
+echo "📦 Setting up lgpio and Python virtual environment..."
 
 # 1. Create and activate virtual environment
 if [ -d "AutoFormBot_venv" ]; then
@@ -11,19 +11,16 @@ else
 fi
 source AutoFormBot_venv/bin/activate
 
-# 2. Install pigpio for Python
+# 2. Install lgpio for Python
 pip install --upgrade pip
-pip install pigpio
+pip install lgpio
 
-# 3. Install and enable pigpio system daemon
+# 3. (Optional) Install lgpio system package
 sudo apt update
-sudo apt install -y pigpio python3-pigpio
+sudo apt install -y lgpio
 
-sudo systemctl enable pigpiod
-sudo systemctl start pigpiod
-
-echo "✅ pigpio setup complete!"
-echo "🔄 Virtual environment 'AutoFormBot_venv' is ready and pigpiod is running."
+echo "✅ lgpio setup complete!"
+echo "🔄 Virtual environment 'AutoFormBot_venv' is ready and lgpio system package is installed."
 
 deactivate
 echo "👋 Virtual environment deactivated."
