@@ -18,9 +18,6 @@ pip install --upgrade pip
 sudo apt update
 sudo apt install -y python3-picamera2 libcamera-apps libatlas-base-dev
 
-# Optionally install OpenCV if not present
-pip install opencv-python
-
 echo "✅ picamera2 setup complete!"
 echo "🔄 Virtual environment 'AutoFormBot_venv' is ready with picamera2 and OpenCV installed."
 

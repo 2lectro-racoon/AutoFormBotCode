@@ -2,6 +2,8 @@
 
 import cv2
 import time
+import sys
+sys.path.append("/usr/lib/python3/dist-packages")  # Add system packages path
 from picamera2 import Picamera2
 
 _picam2 = None
