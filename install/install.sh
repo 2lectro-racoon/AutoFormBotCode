@@ -18,6 +18,7 @@ bash "$AUTOFORM_PATH/scripts/opencv/01_opencv_setup.sh"
 bash "$AUTOFORM_PATH/scripts/YOLOv11/01_yolo_setup.sh"
 bash "$AUTOFORM_PATH/scripts/tflite/01_tflite_setup.sh"
 bash "$AUTOFORM_PATH/scripts/gpio/02_gpio_setup.sh"
+bash "$AUTOFORM_PATH/scripts/afb/01_picamera2_setup.sh"
 
 echo '# === Auto PYTHONPATH for AutoFormBotCode ===' >> /home/autoformbotpi/AutoFormBot_venv/bin/activate
 echo 'export AUTOBOT_ROOT="/home/autoformbotpi/AutoFormBotCode"' >> /home/autoformbotpi/AutoFormBot_venv/bin/activate
