@@ -22,7 +22,8 @@ def init_gpio():
     lgpio.gpio_claim_output(pi, PINS.LED_LEFT, 0)
 
     # Battery pins (optional input mode if needed)
-    for pin in [PINS.BAT_100, PINS.BAT_75, PINS.BAT_50, PINS.BAT_25]:
+    # for pin in [PINS.BAT_100, PINS.BAT_75, PINS.BAT_50, PINS.BAT_25]:
+    for pin in [PINS.BAT_100, PINS.BAT_50, PINS.BAT_10]:
         lgpio.gpio_claim_input(pi, pin)
 
     # Motor enable
