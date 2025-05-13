@@ -83,14 +83,20 @@ def stop_all():
 # Battery level reading
 def get_battery_level():
     """
-    Read battery status from input GPIOs and return battery level (0–100).
-    Priority: BAT_100 > BAT_50 > BAT_10
+    Count number of active battery GPIO inputs to determine level.
+    3 pins high -> 100%
+    2 pins high -> 50%
+    1 pin high -> 10%
+    0 pin high -> 0%
     """
-    if lgpio.gpio_read(pi, PINS.BAT_100):
+    pins = [PINS.BAT_100, PINS.BAT_50, PINS.BAT_10]
+    count = sum(lgpio.gpio_read(pi, pin) for pin in pins)
+
+    if count == 3:
         return 100
-    elif lgpio.gpio_read(pi, PINS.BAT_50):
+    elif count == 2:
         return 50
-    elif lgpio.gpio_read(pi, PINS.BAT_10):
+    elif count == 1:
         return 10
     else:
         return 0
