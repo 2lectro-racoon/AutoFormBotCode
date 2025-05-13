@@ -79,5 +79,18 @@ def stop_all():
     lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, 0)
     set_led(False, False)
     lgpio.gpio_write(pi, PINS.STBY, 0)
-    # Optionally close gpiochip
-    # lgpio.gpiochip_close(pi)
+
+# Battery level reading
+def get_battery_level():
+    """
+    Read battery status from input GPIOs and return battery level (0–100).
+    Priority: BAT_100 > BAT_50 > BAT_10
+    """
+    if lgpio.gpio_read(pi, PINS.BAT_100):
+        return 100
+    elif lgpio.gpio_read(pi, PINS.BAT_50):
+        return 50
+    elif lgpio.gpio_read(pi, PINS.BAT_10):
+        return 10
+    else:
+        return 0
