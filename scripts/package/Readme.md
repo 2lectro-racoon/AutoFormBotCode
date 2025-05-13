@@ -33,11 +33,18 @@ import afb
 
 ### 1. Camera
 
+카메라 초기설정  
+
+```python
+afb.camera.init(width, height, framerate) # 기본값 640, 480, 30
+```
+
 카메라 프레임 불러오기  
 
 ```python
 frame = afb.camera.get_image()
 ```
+
 카메라 해제  
 
 ```python
