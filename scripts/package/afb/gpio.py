@@ -73,8 +73,8 @@ def led(left_on=False, right_on=False):
 
 # Clean shutdown
 def stop_all():
-    motor(1, 0)
-    motor(2, 0)
+    motor(0, 1)
+    motor(0, 2)
     lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, 0)
     led(False, False)
     lgpio.gpio_write(pi, PINS.STBY, 0)
