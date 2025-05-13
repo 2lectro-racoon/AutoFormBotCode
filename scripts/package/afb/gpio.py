@@ -74,10 +74,10 @@ def led(left_on=False, right_on=False):
 
 # Clean shutdown
 def stop_all():
-    set_motor_speed(1, 0)
-    set_motor_speed(2, 0)
+    motor(1, 0)
+    motor(2, 0)
     lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, 0)
-    set_led(False, False)
+    led(False, False)
     lgpio.gpio_write(pi, PINS.STBY, 0)
 
 # Battery level reading
