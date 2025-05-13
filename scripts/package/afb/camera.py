@@ -21,3 +21,11 @@ def get_image():
     if _picam2 is None:
         _start_camera()
     return _picam2.capture_array()
+
+
+# Release and clean up the camera
+def release_camera():
+    global _picam2
+    if _picam2 is not None:
+        _picam2.stop()
+        _picam2 = None
