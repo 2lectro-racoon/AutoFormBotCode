@@ -8,7 +8,7 @@ pi = lgpio.gpiochip_open(0)
 atexit.register(lambda: stop_all())
 
 # Initialization
-def init_gpio():
+def init():
     # Motor pins
     for pin in [PINS.M1_IN1, PINS.M1_IN2, PINS.M1_PWM,
                 PINS.M2_IN1, PINS.M2_IN2, PINS.M2_PWM, PINS.STBY]:
@@ -31,14 +31,14 @@ def init_gpio():
 
 
 # Servo control (angle: 0 ~ 180)
-def set_servo_angle(angle):
+def servo(angle):
     pulse = 500 + (angle / 180.0) * 2000  # 500~2500us
     duty = pulse / 20000 * 100.0
     lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, duty)
 
 
 # Motor direction + speed
-def set_motor_speed(motor_id, speed, inverse=1):
+def motor(motor_id, speed, inverse=1):
     """
     Control motor direction and speed.
 
@@ -67,7 +67,7 @@ def set_motor_speed(motor_id, speed, inverse=1):
 
 
 # LED control
-def set_led(left_on=False, right_on=False):
+def led(left_on=False, right_on=False):
     lgpio.gpio_write(pi, PINS.LED_LEFT, 1 if left_on else 0)
     lgpio.gpio_write(pi, PINS.LED_RIGHT, 1 if right_on else 0)
 
@@ -81,7 +81,7 @@ def stop_all():
     lgpio.gpio_write(pi, PINS.STBY, 0)
 
 # Battery level reading
-def get_battery_level():
+def battery():
     """
     Count number of active battery GPIO inputs to determine level.
     3 pins high -> 100%
