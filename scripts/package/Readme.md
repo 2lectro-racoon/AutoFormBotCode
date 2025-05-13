@@ -51,4 +51,41 @@ frame = afb.camera.get_image()
 afb.camera.release_camera()
 ```
 
+### 2. Gpio
+
+gpio 초기설정  
+
+```python
+afb.gpio.init()
+```
+
+조향 제어
+
+```python
+afb.gpio.servo(angle) # 기본값 90(중심) 30~150 권장
+```
+
+구동모터 제어
+
+```python
+afb.gpio.motor(speed, motor_id, inverse) # -255~255(기본값 0), 1 or 2(기본값 1채널), 1 or -1(기본값 1, 역방향 구동시 -1)
+```
+
+전조등(LED) 제어
+
+```python
+afb.gpio.led(left, right) # True or False (기본값 False)
+```
+
+배터리 잔량 확인
+
+```python
+afb.gpio.battery() # 100, 50, 10, 0 4가지 결과 출력
+```
+
+전체 해제
+
+```python
+afb.gpio.stop_all()
+```
 ---
