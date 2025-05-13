@@ -8,18 +8,23 @@ from picamera2 import Picamera2
 
 _picam2 = None
 
-def _start_camera():
+def init(width=640, height=480, framerate=30):
     global _picam2
-    if _picam2 is None:
-        _picam2 = Picamera2()
-        _picam2.configure(_picam2.create_preview_configuration(main={"size": (640, 480)}))
-        _picam2.start()
-        time.sleep(1)  # Allow camera to warm up
+    if _picam2 is not None:
+        _picam2.stop()
+    _picam2 = Picamera2()
+    _picam2.configure(
+        _picam2.create_preview_configuration(
+            main={"size": (width, height)},
+            controls={"FrameDurationLimits": (int(1e6 // framerate), int(1e6 // framerate))}
+        )
+    )
+    _picam2.start()
+    time.sleep(1)  # Allow camera to warm up
 
 def get_image():
-    global _picam2
     if _picam2 is None:
-        _start_camera()
+        raise RuntimeError("Camera not initialized. Call init() first.")
     return _picam2.capture_array()
 
 
