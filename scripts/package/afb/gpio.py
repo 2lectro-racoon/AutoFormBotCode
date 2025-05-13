@@ -2,7 +2,7 @@
 
 import lgpio
 import atexit
-from gpio_pins import PINS
+from ._gpio_pins import PINS
 # Create global lgpio instance
 pi = lgpio.gpiochip_open(0)
 atexit.register(lambda: stop_all())
