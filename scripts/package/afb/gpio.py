@@ -31,13 +31,13 @@ def init():
 
 
 # Servo control (angle: 0 ~ 180)
-def servo(angle=90):
+def servo(angle = 90):
     pulse = 500 + (angle / 180.0) * 2000  # 500~2500us
     lgpio.tx_servo(pi, PINS.SERVO_PIN, int(pulse))
 
 
 # Motor direction + speed
-def motor(motor_id, speed, inverse=1):
+def motor(speed = 0, motor_id = 1, inverse = 1):
     """
     Control motor direction and speed.
 
