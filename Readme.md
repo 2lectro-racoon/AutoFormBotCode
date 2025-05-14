@@ -88,7 +88,7 @@ AP의 SSID(AutoFormBotpi-setup)에 접속
 잠시 기다리면 STA모드로 변경 및 해당 SSID에 연결 및 oled에서 IP확인 가능  
 
 ---
-## Use Python venv
+## Use Python venv and Package
 
 파이썬 가상환경 활성화  
 
@@ -101,6 +101,10 @@ source AutoFormBot_venv/bin/activate
 ```bash
 deactivate
 ```
+
+패키지는 아래 링크 참조  
+
+[패키지 설명](/scripts/afb/Readme.md)
 
 ---
 ## 라이선스
