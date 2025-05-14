@@ -104,7 +104,7 @@ deactivate
 
 패키지는 아래 링크 참조  
 
-[패키지 설명](/scripts/afb/Readme.md)
+[패키지 설명](/scripts/package/Readme.md)
 
 ---
 ## 라이선스
