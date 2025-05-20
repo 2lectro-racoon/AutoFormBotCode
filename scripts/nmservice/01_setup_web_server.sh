@@ -54,7 +54,7 @@ app = Flask(__name__)
 html = """
 <!DOCTYPE html>
 <html>
-<head><title>AutoFormBotpi Wi-Fi Setup</title></head>
+<head><title>AFM Wi-Fi Setup</title></head>
 <body>
   <h2>Wi-Fi Setup</h2>
   <form action="/" method="POST">

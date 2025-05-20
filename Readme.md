@@ -83,8 +83,9 @@ git clone https://github.com/2lectro-racoon/AutoFormBotCode.git
 
 ## AP모드에서 SSID 연결방법
 
-AP의 SSID(AutoFormBotpi-setup)에 접속  
+AP의 SSID(AFM-setup)에 접속  
 인터넷 브라우저에서 192.168.4.1:8080 입력후 로봇에 연결하고자 하는 SSID 및 PW 입력 후 저장  
+만약에 숨겨진 인터넷이면 체크박스 선택  
 잠시 기다리면 STA모드로 변경 및 해당 SSID에 연결 및 oled에서 IP확인 가능  
 
 ---
