@@ -94,7 +94,7 @@ AP의 SSID(AFM-setup)에 접속
 파이썬 가상환경 활성화  
 
 ```bash
-source AutoFormBot_venv/bin/activate
+source AFB_venv/bin/activate
 ```
 
 파이썬 가상환경 비활성화  
