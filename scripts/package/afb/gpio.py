@@ -79,6 +79,9 @@ def stop_all():
     led(False, False)
     lgpio.gpio_write(pi, PINS.STBY, 0)
 
+def stby(state=0):
+    lgpio.gpio_write(pi, PINS.STBY, state)
+
 # Battery level reading
 def battery():
     """
