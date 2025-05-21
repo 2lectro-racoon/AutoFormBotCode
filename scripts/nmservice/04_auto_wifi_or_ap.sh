@@ -7,7 +7,7 @@ AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Wi-Fi interface
 INTERFACE="wlan0"
-AP_SSID="AFM-setup"
+AP_SSID="AFB-setup"
 AP_IP="192.168.4.1"
 CHANNEL="6"
 
