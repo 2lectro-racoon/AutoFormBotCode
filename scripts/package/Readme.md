@@ -77,6 +77,10 @@ afb.gpio.motor(speed, motor_id, inverse) # -255~255(기본값 0), 1 or 2(기본�
 afb.gpio.led(left, right) # True or False (기본값 False)
 ```
 
+```python
+afb.gpio.stby(state) # 0 or 1 (기본값 False)
+```
+
 배터리 잔량 확인
 
 ```python
