@@ -18,12 +18,12 @@ AuotFormBot에 구동에 필요한 커스텀 패키지
 
 ## How To Use
 
-### 0. Activate AutoFormBot_venv
+### 0. Activate AFB_venv
 
 파이썬 가상환경 활성화  
 
 ```bash
-source AutoFormBot_venv/bin/activate
+source AFB_venv/bin/activate
 ```
 파이썬 파일에서 패키지 임포트  
 
