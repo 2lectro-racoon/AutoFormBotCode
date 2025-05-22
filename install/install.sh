@@ -26,6 +26,7 @@ echo 'export PYTHONPATH="$AUTOBOT_ROOT/scripts/gpio:$AUTOBOT_ROOT/scripts/opencv
 
 bash "$AUTOFORM_PATH/scripts/gpio/01_servo_stop.sh"
 
+echo 'avoid_warnings=1' | sudo tee -a /boot/firmware/config.txt
 echo "AutoFormBot Setting Done..."
 
 sudo reboot
