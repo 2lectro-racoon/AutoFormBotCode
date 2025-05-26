@@ -44,7 +44,7 @@ Raspberry pi imager를 사용해 Raspberry Pi OS (Bookworm 64bit)를 설치
 
 최초 설정시 설정을 편집하기에서 SSH 활성화 및 무선 LAN 설정 비활성화
 
-### 1. Set rasp-config
+### 1. Set raspi-config
 
 ![터미널](images/terminal.png)
 ![라즈베리파이 설정창](images/raspi-config.png)
