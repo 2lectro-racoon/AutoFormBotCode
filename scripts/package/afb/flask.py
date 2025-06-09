@@ -32,7 +32,7 @@ def index():
     <!doctype html>
     <html>
     <head>
-        <title>AutoFormBot Multi Stream</title>
+        <title>AFB Stream Viewer</title>
         <style>
             .container {
                 display: flex;
@@ -53,7 +53,7 @@ def index():
         </style>
     </head>
     <body>
-        <h1>Multi Stream Viewer</h1>
+        <h1>AFB Stream Viewer</h1>
         <div class="container">
     '''
     for idx in range(4):
