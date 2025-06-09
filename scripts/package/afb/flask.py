@@ -5,7 +5,7 @@ import cv2
 import time
 
 app = Flask(__name__)
-streams = [None] * 4  # index 0–3
+streams = [{"frame": None, "name": None} for _ in range(4)]  # index 0–3
 server_started = False
 
 def flask_thread():
@@ -15,7 +15,7 @@ def flask_thread():
 def video_feed(slot):
     def generate():
         while True:
-            frame = streams[slot]
+            frame = streams[slot]["frame"]
             if frame is None:
                 time.sleep(0.01)
                 continue
@@ -28,31 +28,55 @@ def video_feed(slot):
 
 @app.route('/')
 def index():
-    return '''
+    html = '''
     <!doctype html>
     <html>
-    <head><title>AutoFormBot Multi Stream</title></head>
+    <head>
+        <title>AutoFormBot Multi Stream</title>
+        <style>
+            .container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 20px;
+            }
+            .stream {
+                text-align: center;
+                flex: 1 1 300px;
+            }
+            img {
+                width: 100%;
+                max-width: 480px;
+                height: auto;
+                border: 1px solid #ccc;
+            }
+        </style>
+    </head>
     <body>
         <h1>Multi Stream Viewer</h1>
-        <table>
-        <tr>
-            <td><h3>Slot 0</h3><img src="/video_feed/0" width="320" height="240"></td>
-            <td><h3>Slot 1</h3><img src="/video_feed/1" width="320" height="240"></td>
-        </tr>
-        <tr>
-            <td><h3>Slot 2</h3><img src="/video_feed/2" width="320" height="240"></td>
-            <td><h3>Slot 3</h3><img src="/video_feed/3" width="320" height="240"></td>
-        </tr>
-        </table>
+        <div class="container">
+    '''
+    for idx in range(4):
+        label = streams[idx]["name"] if streams[idx]["name"] else f"Slot {idx}"
+        html += f'''
+            <div class="stream">
+                <h3>{label}</h3>
+                <img src="/video_feed/{idx}">
+            </div>
+        '''
+    html += '''
+        </div>
     </body>
     </html>
     '''
+    return html
 
 def imshow(name, frame, slot):
     global server_started
     frame = cv2.resize(frame, TARGET_SIZE)
     if 0 <= slot < 4:
-        streams[slot] = frame
+        streams[slot]["frame"] = frame
+        streams[slot]["name"] = name
 
     if not server_started:
         threading.Thread(target=flask_thread, daemon=True).start()
