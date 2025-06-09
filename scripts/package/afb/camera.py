@@ -25,8 +25,7 @@ def init(width=640, height=480, framerate=30):
 def get_image():
     if _picam2 is None:
         raise RuntimeError("Camera not initialized. Call init() first.")
-    _picam2.wait_for_next_frame()
-    return _picam2.capture_array()
+    return _picam2.capture_array("main")  # Only grab the latest available frame
 
 
 # Release and clean up the camera
