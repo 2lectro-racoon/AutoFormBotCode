@@ -58,7 +58,7 @@ Headless 상황에서(SSH 접속 등) 최대 4채널의 영상 출력 지원
 아래의 함수 실행 후 웹에서 라즈베리파이 IP:5000으로 접속 후 새로고침하여 사용
 
 ```python
-afb.flask.imshow(title, frame, slot) # 영상 제목, 출력하고자 하는 영상 프레임, 위치
+afb.flask.imshow(title, frame, slot) # 영상 제목(문자열), 출력하고자 하는 영상 프레임, 위치(0, 1, 2, 3)
 ```
 
 ![Flask 화면](/images/flask.png)
