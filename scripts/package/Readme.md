@@ -61,7 +61,7 @@ Headless 상황에서(SSH 접속 등) 최대 4채널의 영상 출력 지원
 afb.flask.imshow(title, frame, slot) # 영상 제목, 출력하고자 하는 영상 프레임, 위치
 ```
 
-![Flask 화면](/AutoFormBotCode/images/flask.png)
+![Flask 화면](/images/flask.png)
 
 ### 3. Gpio
 
