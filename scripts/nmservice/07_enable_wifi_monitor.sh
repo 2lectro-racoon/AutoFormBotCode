@@ -19,7 +19,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c 'SSID="\$SSID" exec "\$0"' "$SCRIPT_DEST"
+ExecStart=/bin/bash -c 'SSID='"$SSID"' exec "$0"' "$SCRIPT_DEST"
 Restart=always
 User=$USER_NAME
 
