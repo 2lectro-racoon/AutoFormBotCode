@@ -9,11 +9,14 @@ class FrozenNamespace(SimpleNamespace):
 
 PINS = FrozenNamespace(
     # Servo
-    SERVO_PIN = 19,           # GPIO19: Servo control signal
+    SERVO_PIN = 18,           # GPIO19: Servo control signal (Rev1.3)
+    # SERVO_PIN = 19,           # GPIO19: Servo control signal (Rev1.2)
 
     # LEDs
-    LED_RIGHT = 7,            # GPIO7: Right LED
-    LED_LEFT  = 8,            # GPIO8: Left LED
+    LED_RIGHT = 24,            # GPIO7: Right LED (Rev1.3)
+    LED_LEFT  = 17,            # GPIO8: Left LED (Rev1.3)
+    # LED_RIGHT = 7,            # GPIO7: Right LED (Rev1.2)
+    # LED_LEFT  = 8,            # GPIO8: Left LED (Rev1.2)
 
     # Motor Driver (TB6612FNG)
     STBY    = 26,             # GPIO26: TB6612FNG standby pin
