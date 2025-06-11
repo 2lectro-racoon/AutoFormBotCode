@@ -1,3 +1,4 @@
+SSID="$1"
 #!/bin/bash
 
 echo "📶 Setting up AutoFormBot Wi-Fi Monitor service..."
@@ -19,7 +20,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_DEST"
+ExecStart=/usr/bin/env SSID=$SSID bash "$SCRIPT_DEST"
 Restart=always
 User=$USER_NAME
 
