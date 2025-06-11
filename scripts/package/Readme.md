@@ -80,7 +80,7 @@ afb.gpio.servo(angle) # 기본값 90(중심) 30~150 권장
 구동모터 제어
 
 ```python
-afb.gpio.motor(speed, motor_id, inverse) # -255~255(기본값 0), 1 or 2(기본값 1채널), 1 or -1(기본값 1, 역방향 구동시 -1)
+afb.gpio.motor(speed, inverse, motor_id) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1), 1 or 2(기본값 1채널)
 ```
 
 전조등(LED) 제어

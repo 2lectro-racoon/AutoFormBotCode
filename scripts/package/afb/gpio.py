@@ -37,7 +37,7 @@ def servo(angle = 90):
 
 
 # Motor direction + speed
-def motor(speed = 0, motor_id = 1, inverse = 1):
+def motor(speed = 0, inverse = 1, motor_id = 1):
     """
     Control motor direction and speed.
 
