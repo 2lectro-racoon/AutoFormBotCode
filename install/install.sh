@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+if [[ "$1" =~ ^[0-9]+$ ]]; then
+  printf -v SSID "AFB-setup%03d" "$1"
+else
+  SSID="AFB-setup"
+fi
+export SSID
+
 LOG_FILE="install_log_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
@@ -9,8 +16,8 @@ echo "AutoFormBot Auto Wi-Fi/AP mode switching script install..."
 AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 bash "$AUTOFORM_PATH/scripts/nmservice/01_setup_web_server.sh"
-bash "$AUTOFORM_PATH/scripts/nmservice/05_enable_auto_wifi_service.sh"
-bash "$AUTOFORM_PATH/scripts/nmservice/07_enable_wifi_monitor.sh"
+SSID="$SSID" bash "$AUTOFORM_PATH/scripts/nmservice/05_enable_auto_wifi_service.sh"
+SSID="$SSID" bash "$AUTOFORM_PATH/scripts/nmservice/07_enable_wifi_monitor.sh"
 bash "$AUTOFORM_PATH/scripts/i2c/01_install.sh"
 bash "$AUTOFORM_PATH/scripts/i2c/02_oled_service.sh"
 bash "$AUTOFORM_PATH/scripts/i2c/03_oled_clear_service.sh"

@@ -15,7 +15,7 @@ After=network.target
 Wants=network.target
 
 [Service]
-ExecStart=$SCRIPT_PATH
+ExecStart=/bin/bash -c 'SSID="$SSID" exec "$0"' "$SCRIPT_PATH"
 Restart=on-failure
 RestartSec=5
 
