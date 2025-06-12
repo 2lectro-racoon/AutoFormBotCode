@@ -12,7 +12,7 @@ echo "🔧 Setting up Access Point mode..."
 HOSTAPD_CONF_CONTENT=$(cat <<EOF
 interface=wlan0
 driver=nl80211
-ssid=${SSID:-AFB-setup}
+ssid=$SSID
 hw_mode=g
 channel=6
 wmm_enabled=0

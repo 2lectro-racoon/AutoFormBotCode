@@ -1,4 +1,3 @@
-SSID="$1"
 #!/bin/bash
 
 set -e
