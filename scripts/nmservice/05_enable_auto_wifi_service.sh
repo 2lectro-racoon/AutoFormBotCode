@@ -17,7 +17,7 @@ After=network.target
 Wants=network.target
 
 [Service]
-ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_PATH" "$SSID"
+ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_PATH" "${SSID}"
 Restart=on-failure
 RestartSec=5
 
