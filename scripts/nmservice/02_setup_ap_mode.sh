@@ -9,6 +9,11 @@ SSID="$1"
 echo "[DEBUG] Received SSID in setup_ap_mode: '$1'"
 echo "[DEBUG] Parsed SSID: '$SSID'"
 
+if [[ -z "$SSID" ]]; then
+  echo "❌ SSID is empty. Aborting to avoid overwriting hostapd.conf with blank SSID."
+  exit 1
+fi
+
 USER_HOME=$(getent passwd "$SUDO_UID" | cut -d: -f6)
 AUTOFORM_PATH="$USER_HOME/AutoFormBotCode"
 
