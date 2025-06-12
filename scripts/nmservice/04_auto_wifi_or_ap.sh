@@ -34,7 +34,7 @@ KNOWN_SSIDS=$(nmcli -t -f NAME connection show)
 
 enable_ap_mode() {
   echo "📶 Switching to AP mode..."
-  bash "$AUTOFORM_PATH/scripts/nmservice/02_setup_ap_mode.sh"
+  bash "$AUTOFORM_PATH/scripts/nmservice/02_setup_ap_mode.sh" "$SSID"
 }
 
 enable_sta_mode() {
