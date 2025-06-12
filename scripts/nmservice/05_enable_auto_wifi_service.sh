@@ -10,6 +10,8 @@ SCRIPT_PATH="$(realpath "$(dirname "$0")")/04_auto_wifi_or_ap.sh"
 
 echo "🔧 Enabling $SERVICE_NAME..."
 
+echo SSID
+
 sudo tee "$SERVICE_PATH" > /dev/null <<EOF
 [Unit]
 Description=Auto Wi-Fi or AP Mode Switcher
