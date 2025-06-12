@@ -2,6 +2,8 @@
 
 echo "📶 Setting up AutoFormBot Wi-Fi Monitor service..."
 
+SSID="$1"
+
 USER_NAME=$(whoami)
 SCRIPT_SRC="/home/$USER_NAME/AutoFormBotCode/scripts/nmservice/06_wifi_monitor.sh"
 SCRIPT_DEST="/usr/local/bin/autoformbot_wifi_monitor.sh"
@@ -19,7 +21,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_DEST"
+ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_DEST" "$SSID"
 Restart=always
 User=$USER_NAME
 

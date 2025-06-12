@@ -4,6 +4,8 @@
 
 set -e
 
+SSID="$1"
+
 USER_HOME=$(getent passwd "$SUDO_UID" | cut -d: -f6)
 AUTOFORM_PATH="$USER_HOME/AutoFormBotCode"
 

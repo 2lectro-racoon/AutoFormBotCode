@@ -2,6 +2,8 @@
 
 echo "🔄 Auto Wi-Fi/AP mode switching script starting..."
 
+SSID="$1"
+
 # Get AutoFormBot root path dynamically
 AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 

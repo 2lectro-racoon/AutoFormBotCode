@@ -2,6 +2,8 @@
 
 set -e
 
+SSID="$1"
+
 SERVICE_NAME="auto_wifi_or_ap.service"
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME"
 SCRIPT_PATH="$(realpath "$(dirname "$0")")/04_auto_wifi_or_ap.sh"
@@ -15,7 +17,7 @@ After=network.target
 Wants=network.target
 
 [Service]
-ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_PATH"
+ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_PATH" "$SSID"
 Restart=on-failure
 RestartSec=5
 
