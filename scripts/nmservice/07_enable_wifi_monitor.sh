@@ -20,7 +20,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env SSID=$SSID bash "$SCRIPT_DEST"
+ExecStart=/usr/bin/env SSID=${SSID} bash "$SCRIPT_DEST"
 Restart=always
 User=$USER_NAME
 
