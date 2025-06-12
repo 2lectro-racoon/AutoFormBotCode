@@ -1,4 +1,3 @@
-SSID="$1"
 #!/bin/bash
 
 echo "📶 Setting up AutoFormBot Wi-Fi Monitor service..."
