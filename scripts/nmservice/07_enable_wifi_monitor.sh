@@ -9,7 +9,7 @@ SCRIPT_SRC="/home/$USER_NAME/AutoFormBotCode/scripts/nmservice/06_wifi_monitor.s
 SCRIPT_DEST="/usr/local/bin/autoformbot_wifi_monitor.sh"
 SERVICE_FILE="/etc/systemd/system/autoformbot_wifi_monitor.service"
 
-echo SSID
+echo $SSID
 
 # Copy script to /usr/local/bin and make it executable
 sudo cp "$SCRIPT_SRC" "$SCRIPT_DEST"
