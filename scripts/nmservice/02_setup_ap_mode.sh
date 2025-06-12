@@ -4,12 +4,17 @@
 
 set -e
 
+
 SSID="$1"
+echo "[DEBUG] Received SSID in setup_ap_mode: '$1'"
+echo "[DEBUG] Parsed SSID: '$SSID'"
 
 USER_HOME=$(getent passwd "$SUDO_UID" | cut -d: -f6)
 AUTOFORM_PATH="$USER_HOME/AutoFormBotCode"
 
 echo "🔧 Setting up Access Point mode..."
+
+echo "[DEBUG] Writing ssid: '$SSID' into hostapd.conf"
 
 HOSTAPD_CONF_CONTENT=$(cat <<EOF
 interface=wlan0
