@@ -2,7 +2,7 @@
 
 echo "🔄 Auto Wi-Fi/AP mode switching script starting..."
 
-SSID="$1"
+AP_SSID="$1"
 echo "[DEBUG] 04_auto_wifi_or_ap.sh received: '$1'"
 echo "[DEBUG] Assigned SSID: '$SSID'"
 
@@ -11,7 +11,7 @@ AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Wi-Fi interface
 INTERFACE="wlan0"
-AP_SSID="$SSID"
+# AP_SSID="$SSID"
 AP_IP="192.168.4.1"
 CHANNEL="6"
 
@@ -36,7 +36,7 @@ KNOWN_SSIDS=$(nmcli -t -f NAME connection show)
 
 enable_ap_mode() {
   echo "📶 Switching to AP mode..."
-  bash "$AUTOFORM_PATH/scripts/nmservice/02_setup_ap_mode.sh" "$SSID"
+  bash "$AUTOFORM_PATH/scripts/nmservice/02_setup_ap_mode.sh" "$AP_SSID"
 }
 
 enable_sta_mode() {
