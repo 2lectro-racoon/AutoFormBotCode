@@ -19,7 +19,7 @@ echo "[DEBUG] Writing ssid: '$SSID' into hostapd.conf"
 HOSTAPD_CONF_CONTENT=$(cat <<EOF
 interface=wlan0
 driver=nl80211
-ssid=$SSID
+ssid=${SSID}
 hw_mode=g
 channel=6
 wmm_enabled=0
