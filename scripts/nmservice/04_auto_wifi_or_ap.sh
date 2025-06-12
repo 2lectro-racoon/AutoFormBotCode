@@ -4,7 +4,7 @@ echo "🔄 Auto Wi-Fi/AP mode switching script starting..."
 
 AP_SSID="$1"
 echo "[DEBUG] 04_auto_wifi_or_ap.sh received: '$1'"
-echo "[DEBUG] Assigned SSID: '$SSID'"
+echo "[DEBUG] Assigned SSID: '$AP_SSID'"
 
 # Get AutoFormBot root path dynamically
 AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
