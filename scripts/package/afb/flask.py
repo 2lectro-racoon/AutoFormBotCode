@@ -14,16 +14,19 @@ def flask_thread():
 @app.route('/video_feed/<int:slot>')
 def video_feed(slot):
     def generate():
-        while True:
-            frame = streams[slot]["frame"]
-            if frame is None:
-                time.sleep(0.01)
-                continue
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame_bytes = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            time.sleep(0.03)
+        try:
+            while True:
+                frame = streams[slot]["frame"]
+                if frame is None:
+                    time.sleep(0.01)
+                    continue
+                ret, buffer = cv2.imencode('.jpg', frame)
+                frame_bytes = buffer.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                time.sleep(0.03)
+        except GeneratorExit:
+            print(f"[INFO] Client disconnected from slot {slot}")
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/')
