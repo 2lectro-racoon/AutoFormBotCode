@@ -1,12 +1,16 @@
 TARGET_SIZE = (640, 480)  # (width, height)
 import threading
-from flask import Flask, Response
+from flask import Flask, Response, request
 import cv2
 import time
+import afb
 
 app = Flask(__name__)
 streams = [{"frame": None, "name": None} for _ in range(4)]  # index 0–3
 server_started = False
+
+latest_frame = None
+servo_angle = 90
 
 def flask_thread():
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
@@ -29,8 +33,22 @@ def video_feed(slot):
             print(f"[INFO] Client disconnected from slot {slot}")
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/')
-def index():
+@app.route('/video_feed')
+def single_video_feed():
+    def generate():
+        global latest_frame
+        while True:
+            frame = afb.camera.get_image()
+            latest_frame = frame.copy()
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            _, jpeg = cv2.imencode('.jpg', frame_rgb)
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+            time.sleep(0.03)
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stream')
+def stream_viewer():
     html = '''
     <!doctype html>
     <html>
@@ -74,6 +92,66 @@ def index():
     '''
     return html
 
+@app.route('/capture', methods=['GET', 'POST'])
+def capture_page():
+    if request.method == 'POST':
+        # handle capture action, e.g. save image or other
+        pass
+    return '''
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+      <meta charset="UTF-8">
+      <title>AFB 자동차 키보드 제어</title>
+      <script>
+        document.addEventListener("keydown", function(event) {
+          fetch("/key", {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: "key=" + event.key
+          });
+        });
+
+        document.addEventListener("keyup", function(event) {
+          fetch("/key", {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: "key=stop"
+          });
+        });
+
+        document.addEventListener("keydown", function(event) {
+          if (event.key === "a") {
+            fetch("/capture", { method: "POST" });
+          }
+        });
+      </script>
+    </head>
+    <body>
+      <h2>AFB 자동차 키보드 제어</h2>
+      <p><strong>페이지 클릭 후 방향키(↑ ↓ ← →)로 제어하세요.</strong></p>
+      <hr>
+      <h3>🚗 실시간 카메라 영상</h3>
+      <img src="/video_feed" width="640" height="480">
+    </body>
+    </html>
+    '''
+
+@app.route('/key', methods=['POST'])
+def key_control():
+    key = request.form.get('key')
+    if key == 'stop':
+        afb.gpio.motor(0, 0)
+    elif key == 'ArrowUp' or key == 'w':
+        afb.gpio.motor(1, 1)
+    elif key == 'ArrowDown' or key == 's':
+        afb.gpio.motor(-1, -1)
+    elif key == 'ArrowLeft' or key == 'a':
+        afb.gpio.motor(-1, 1)
+    elif key == 'ArrowRight' or key == 'd':
+        afb.gpio.motor(1, -1)
+    return ('', 204)
+
 def imshow(name, frame, slot):
     global server_started
     frame = cv2.resize(frame, TARGET_SIZE)
@@ -83,4 +161,10 @@ def imshow(name, frame, slot):
 
     if not server_started:
         threading.Thread(target=flask_thread, daemon=True).start()
+        server_started = True
+
+def capture():
+    global server_started
+    if not server_started:
+        flask_thread()
         server_started = True
