@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>AFB 자동차 키보드 제어</title>
+  <script>
+    document.addEventListener("keydown", function(event) {
+      fetch("/key", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "key=" + event.key
+      });
+    });
+
+    document.addEventListener("keyup", function(event) {
+      fetch("/key", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "key=stop"
+      });
+    });
+  </script>
+</head>
+<body>
+  <h2>AFB 자동차 키보드 제어</h2>
+  <p><strong>페이지 클릭 후 방향키(↑ ↓ ← →)로 제어하세요.</strong></p>
+  <hr>
+  <h3>🚗 실시간 카메라 영상</h3>
+  <img src="/video_feed" width="640" height="480">
+</body>
+</html>
