@@ -122,7 +122,7 @@ def capture_page():
 
         document.addEventListener("keydown", function(event) {
           if (event.key === "a") {
-            fetch("/capture", { method: "POST" });
+            fetch("/imwrite", { method: "POST" });
           }
         });
       </script>
@@ -140,17 +140,33 @@ def capture_page():
 @app.route('/key', methods=['POST'])
 def key_control():
     key = request.form.get('key')
-    if key == 'stop':
-        afb.gpio.motor(0, 0)
-    elif key == 'ArrowUp' or key == 'w':
-        afb.gpio.motor(1, 1)
-    elif key == 'ArrowDown' or key == 's':
-        afb.gpio.motor(-1, -1)
-    elif key == 'ArrowLeft' or key == 'a':
-        afb.gpio.motor(-1, 1)
-    elif key == 'ArrowRight' or key == 'd':
-        afb.gpio.motor(1, -1)
+    if key == "ArrowUp":
+        afb.gpio.motor(100, 1, 1)
+    elif key == "ArrowDown":
+        afb.gpio.motor(100, -1, 1)
+    elif key == "ArrowLeft":
+        if servo_angle != 40:
+            afb.gpio.servo(40)
+            servo_angle = 40
+    elif key == "ArrowRight":
+        if servo_angle != 140:
+            afb.gpio.servo(140)
+            servo_angle = 140
+    elif key == "stop":
+        afb.gpio.motor(0, 1, 1)
+        if servo_angle != 90:
+            afb.gpio.servo(90)
+            servo_angle = 90
     return ('', 204)
+
+def imwrite():
+    global latest_frame
+    if latest_frame is not None:
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        path = f"captures/frame_{timestamp}.jpg"
+        cv2.imwrite(path, cv2.cvtColor(latest_frame, cv2.COLOR_RGB2BGR))
+        print(f"✅ 캡처됨: {path}")
+    return '', 204
 
 def imshow(name, frame, slot):
     global server_started
