@@ -139,6 +139,7 @@ def capture_page():
 
 @app.route('/key', methods=['POST'])
 def key_control():
+    global servo_angle
     key = request.form.get('key')
     if key == "ArrowUp":
         afb.gpio.motor(100, 1, 1)
