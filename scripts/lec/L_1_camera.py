@@ -11,5 +11,4 @@ while True:
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     # RGB로 웹 전송
-    afb.flask.imshow("AFB Camera", frame_rgb, 1)
-
+    afb.flask.imshow("AFB Camera", frame_rgb, 0)

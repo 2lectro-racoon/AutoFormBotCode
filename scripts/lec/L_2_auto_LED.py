@@ -18,7 +18,7 @@ try:
         time.sleep(1)
 
 except KeyboardInterrupt:
-    print("사용자 종료")
+    print("LED 제어 종료")
 
 finally:
     afb.gpio.stop_all()  # 전체 해제
