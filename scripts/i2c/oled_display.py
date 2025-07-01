@@ -49,7 +49,7 @@ def display_info():
     device = ssd1306(serial, height=32)
 
     # Use a larger TrueType font
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
 
     while True:
         mode, ssid, ip = get_mode_and_info()
