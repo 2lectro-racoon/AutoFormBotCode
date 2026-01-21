@@ -10,9 +10,9 @@ else
     python3.11 -m venv .afbvenv
 fi
 source .afbvenv/bin/activate
-# 2. Install TensorFlow 2.19
+# 2. Install TensorFlow 2.20.0
 pip install --upgrade pip
-pip install tensorflow==2.19.0
+pip install tensorflow==2.20.0
 
 echo "✅ TensorFlow install complete!"
 echo "🔄 Virtual environment '.afbvenv' is ready."

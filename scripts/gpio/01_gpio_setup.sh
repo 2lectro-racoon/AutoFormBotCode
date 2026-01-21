@@ -11,6 +11,11 @@ else
 fi
 source .afbvenv/bin/activate
 
+# lgpio: GPIO access from userspace
+
+sudo apt install -y swig python3-dev build-essential
+sudo apt install -y lgpio
+
 # 2. Install Python packages for low-level hardware access
 pip install --upgrade pip
 
@@ -24,9 +29,6 @@ pip install spidev
 
 # 3. Install required system packages
 sudo apt update
-
-# lgpio: GPIO access from userspace
-sudo apt install -y lgpio
 
 # python3-spidev: system-level SPI bindings (backup for non-venv execution)
 sudo apt install -y python3-spidev
