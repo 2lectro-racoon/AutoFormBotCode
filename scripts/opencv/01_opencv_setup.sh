@@ -20,20 +20,20 @@ sudo apt install -y \
     libcanberra-gtk*
 
 # 1. Create and activate virtual environment
-if [ -d "AFB_venv" ]; then
-    echo "🔁 Virtual environment 'AFB_venv' already exists. Activating..."
+if [ -d ".afbvenv" ]; then
+    echo "🔁 Virtual environment '.afbvenv' already exists. Activating..."
 else
-    echo "🆕 Creating virtual environment 'AFB_venv'..."
-    python3.11 -m venv AFB_venv
+    echo "🆕 Creating virtual environment '.afbvenv'..."
+    python3.11 -m venv .afbvenv
 fi
-source AFB_venv/bin/activate
+source .afbvenv/bin/activate
 
 # 2. Install opencv-contrib-python 4.8.1.78
 pip install --upgrade pip
 pip install opencv-contrib-python==4.8.1.78 numpy==1.26.4
 
 echo "✅ opencv install complete!"
-echo "🔄 Virtual environment 'AFB_venv' is ready."
+echo "🔄 Virtual environment '.afbvenv' is ready."
 
 deactivate
 echo "👋 Virtual environment deactivated."

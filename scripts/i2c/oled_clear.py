@@ -1,24 +1,44 @@
-import time
-from luma.core.interface.serial import i2c
-from luma.oled.device import sh1106
-from luma.core.render import canvas
+#!/usr/bin/env python3
+"""OLED clear helper for shutdown.
 
-# Log to temp file for debug
-with open("/tmp/oled_clear_log.txt", "a") as f:
-    f.write("oled_clear.py started\n")
+This script explicitly clears the SSD1306 OLED using Adafruit libraries.
+It is intended to be called from systemd ExecStopPost so that the display
+is blanked even when the main i2c_manager exits during shutdown.
+"""
+
+import time
+import board
+import busio
+import adafruit_ssd1306
+
+# Optional debug log (best-effort)
+try:
+    with open("/tmp/oled_clear_log.txt", "a") as f:
+        f.write("oled_clear.py started\n")
+except Exception:
+    pass
 
 try:
-    serial = i2c(port=1, address=0x3C)
-    device = sh1106(serial)
+    # Initialize I2C and OLED (SSD1306 128x32 @ 0x3C)
+    i2c = busio.I2C(board.SCL, board.SDA)
+    oled = adafruit_ssd1306.SSD1306_I2C(128, 32, i2c)
 
-    with canvas(device) as draw:
-        draw.rectangle(device.bounding_box, outline=0, fill=0)
+    # Clear display
+    oled.fill(0)
+    oled.show()
 
-    with open("/tmp/oled_clear_log.txt", "a") as f:
-        f.write("OLED cleared successfully\n")
+    # Small delay to ensure command is sent before shutdown continues
+    time.sleep(0.2)
 
-    time.sleep(0.3)
+    try:
+        with open("/tmp/oled_clear_log.txt", "a") as f:
+            f.write("OLED cleared successfully\n")
+    except Exception:
+        pass
 
 except Exception as e:
-    with open("/tmp/oled_clear_log.txt", "a") as f:
-        f.write(f"ERROR: {e}\n")
+    try:
+        with open("/tmp/oled_clear_log.txt", "a") as f:
+            f.write(f"ERROR: {e}\n")
+    except Exception:
+        pass

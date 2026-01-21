@@ -1,7 +1,8 @@
 #!/bin/bash
+set -e
 
 USER_HOME=$(eval echo ~${SUDO_USER:-$USER})
-VENV_PATH="$USER_HOME/.oledenv"
+VENV_PATH="$USER_HOME/.afbvenv"
 OLED_SCRIPT_PATH="$USER_HOME/AutoFormBotCode/scripts/i2c/oled_display.py"
 
 # ✅ Check if virtual environment already exists
@@ -21,7 +22,15 @@ source "$VENV_PATH/bin/activate"
 
 # 📦 Install OLED dependencies
 pip install --upgrade pip
-pip install luma.oled netifaces adafruit-circuitpython-ssd1306 adafruit-blinka
+pip install \
+  adafruit-blinka \
+  adafruit-circuitpython-ssd1306 \
+  adafruit-circuitpython-ina219 \
+  adafruit-circuitpython-vl53l1x \
+  adafruit-circuitpython-mpu6050 \
+  pillow \
+  netifaces
+
 
 # 🎉 Done
 echo "✅ Virtual environment setup complete."

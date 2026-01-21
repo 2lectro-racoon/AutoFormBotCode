@@ -3,20 +3,20 @@
 echo "📦 Installing Flask and Python virtual environment..."
 
 # 1. Create and activate virtual environment
-if [ -d "AFB_venv" ]; then
-    echo "🔁 Virtual environment 'AFB_venv' already exists. Activating..."
+if [ -d ".afbvenv" ]; then
+    echo "🔁 Virtual environment '.afbvenv' already exists. Activating..."
 else
-    echo "🆕 Creating virtual environment 'AFB_venv'..."
-    python3.11 -m venv AFB_venv
+    echo "🆕 Creating virtual environment '.afbvenv'..."
+    python3.11 -m venv .afbvenv
 fi
-source AFB_venv/bin/activate
+source .afbvenv/bin/activate
 
 # 2. Install Flask
 pip install --upgrade pip
 pip install flask
 
 echo "✅ Flask installation complete!"
-echo "🔄 Virtual environment 'AFB_venv' is ready."
+echo "🔄 Virtual environment '.afbvenv' is ready."
 
 deactivate
 echo "👋 Virtual environment deactivated."

@@ -1,104 +1,123 @@
-# gpio_control.py
+# gpio.py
+"""
+Deprecated GPIO helper (v2.0 transitional).
 
-import lgpio
-import atexit
-from ._gpio_pins import PINS
-# Create global lgpio instance
-pi = lgpio.gpiochip_open(0)
-atexit.register(lambda: stop_all())
+Currently used only for STM32 NRST reset via Raspberry Pi GPIO.
+All motor/servo control has moved to STM32 via SPI.
+"""
 
-# Initialization
-def init():
-    # Motor pins
-    for pin in [PINS.M1_IN1, PINS.M1_IN2, PINS.M1_PWM,
-                PINS.M2_IN1, PINS.M2_IN2, PINS.M2_PWM, PINS.STBY]:
-        lgpio.gpio_claim_output(pi, pin, 0)
+import mmap
+import os
+import struct
+import time
+from . import _spi_bus
 
-    # Servo
-    lgpio.gpio_claim_output(pi, PINS.SERVO_PIN, 0)
+# ================== Configuration ==================
+# BCM pin connected to STM32 NRST
+NRST_GPIO = 23          # BCM numbering
+RESET_PULSE = 0.05      # Reset low time (seconds)
+# ===================================================
 
-    # LEDs
-    lgpio.gpio_claim_output(pi, PINS.LED_RIGHT, 0)
-    lgpio.gpio_claim_output(pi, PINS.LED_LEFT, 0)
+# Raspberry Pi 4/5 GPIO base
+GPIO_BASE = 0xFE200000
+GPIO_LEN  = 0xF4
 
-    # Battery pins (optional input mode if needed)
-    # for pin in [PINS.BAT_100, PINS.BAT_75, PINS.BAT_50, PINS.BAT_25]:
-    for pin in [PINS.BAT_100, PINS.BAT_50, PINS.BAT_10]:
-        lgpio.gpio_claim_input(pi, pin)
-
-    # Motor enable
-    lgpio.gpio_write(pi, PINS.STBY, 1)
-
-
-# Servo control (angle: 0 ~ 180)
-def servo(angle = 90):
-    pulse = 500 + (angle / 180.0) * 2000  # 500~2500us
-    lgpio.tx_servo(pi, PINS.SERVO_PIN, int(pulse))
+# GPIO register offsets
+GPFSEL0 = 0x00
+GPFSEL1 = 0x04
+GPFSEL2 = 0x08
+GPSET0  = 0x1C
+GPCLR0  = 0x28
 
 
-# Motor direction + speed
-def motor(speed = 0, inverse = 1, motor_id = 1):
+# ------------------ Low-level helpers ------------------
+
+def _gpio_set_output(mem, pin: int) -> None:
+    reg = GPFSEL0 + (pin // 10) * 4
+    shift = (pin % 10) * 3
+
+    val = struct.unpack("I", mem[reg:reg + 4])[0]
+    val &= ~(0b111 << shift)     # clear
+    val |=  (0b001 << shift)     # output
+    mem[reg:reg + 4] = struct.pack("I", val)
+
+
+def _gpio_set_input(mem, pin: int) -> None:
+    """Release NRST line (High-Z)."""
+    reg = GPFSEL0 + (pin // 10) * 4
+    shift = (pin % 10) * 3
+
+    val = struct.unpack("I", mem[reg:reg + 4])[0]
+    val &= ~(0b111 << shift)     # INPUT (000)
+    mem[reg:reg + 4] = struct.pack("I", val)
+
+
+def _gpio_high(mem, pin: int) -> None:
+    mem[GPSET0:GPSET0 + 4] = struct.pack("I", 1 << pin)
+
+
+def _gpio_low(mem, pin: int) -> None:
+    mem[GPCLR0:GPCLR0 + 4] = struct.pack("I", 1 << pin)
+
+
+# ------------------ Public API ------------------
+
+def reset() -> None:
+    """Hardware reset for STM32 via NRST GPIO.
+
+    This function asserts NRST low, then releases it and finally
+    switches the pin to INPUT (High-Z) so STM32 internal pull-up
+    takes over.
+
+    Usage:
+        >>> import afb.gpio
+        >>> afb.gpio.reset()
     """
-    Control motor direction and speed.
+    fd = None
+    mem = None
 
-    :param motor_id: 1 or 2 (M1 or M2 on TB6612FNG)
-    :param speed: -255 ~ +255
-    """
-    if motor_id == 1:
-        IN1, IN2, PWM = PINS.M1_IN1, PINS.M1_IN2, PINS.M1_PWM
-    elif motor_id == 2:
-        IN1, IN2, PWM = PINS.M2_IN1, PINS.M2_IN2, PINS.M2_PWM
-    else:
-        raise ValueError("motor_id must be 1 or 2")
+    try:
+        fd = os.open("/dev/gpiomem", os.O_RDWR | os.O_SYNC)
+        mem = mmap.mmap(
+            fd,
+            GPIO_LEN,
+            mmap.MAP_SHARED,
+            mmap.PROT_READ | mmap.PROT_WRITE,
+            offset=0
+        )
 
-    if speed * inverse > 0:
-        lgpio.gpio_write(pi, IN1, 1)
-        lgpio.gpio_write(pi, IN2, 0)
-    elif speed * inverse < 0:
-        lgpio.gpio_write(pi, IN1, 0)
-        lgpio.gpio_write(pi, IN2, 1)
-    else:
-        lgpio.gpio_write(pi, IN1, 0)
-        lgpio.gpio_write(pi, IN2, 0)
+        # 1) Configure as output
+        _gpio_set_output(mem, NRST_GPIO)
 
-    duty = min(abs(speed), 255) / 255 * 100.0
-    lgpio.tx_pwm(pi, PWM, 1000, duty)
+        # 2) Idle high
+        _gpio_high(mem, NRST_GPIO)
+        time.sleep(0.05)
+
+        # 3) Assert reset (LOW)
+        _gpio_low(mem, NRST_GPIO)
+        time.sleep(RESET_PULSE)
+
+        # 4) Release reset (HIGH)
+        _gpio_high(mem, NRST_GPIO)
+        time.sleep(0.01)
+
+        # 5) Release NRST line (High-Z)
+        _gpio_set_input(mem, NRST_GPIO)
+
+    finally:
+        if mem is not None:
+            mem.close()
+        if fd is not None:
+            os.close(fd)
 
 
-# LED control
-def led(left_on=False, right_on=False):
-    lgpio.gpio_write(pi, PINS.LED_LEFT, 1 if left_on else 0)
-    lgpio.gpio_write(pi, PINS.LED_RIGHT, 1 if right_on else 0)
+def getMode():
+    """Deprecated. GPIO-based mode detection is no longer used."""
+    _spi_bus.get_mode()
+    time.sleep(float(0.005))
+    rx=_spi_bus.status_request()
+    
+    return rx
 
-
-# Clean shutdown
-def stop_all():
-    motor(0, 1)
-    motor(0, 2)
-    lgpio.tx_pwm(pi, PINS.SERVO_PIN, 50, 0)
-    led(False, False)
-    lgpio.gpio_write(pi, PINS.STBY, 0)
-
-def stby(state=0):
-    lgpio.gpio_write(pi, PINS.STBY, state)
-
-# Battery level reading
-def battery():
-    """
-    Count number of active battery GPIO inputs to determine level.
-    3 pins high -> 100%
-    2 pins high -> 50%
-    1 pin high -> 10%
-    0 pin high -> 0%
-    """
-    pins = [PINS.BAT_100, PINS.BAT_50, PINS.BAT_10]
-    count = sum(lgpio.gpio_read(pi, pin) for pin in pins)
-
-    if count == 3:
-        return 100
-    elif count == 2:
-        return 50
-    elif count == 1:
-        return 10
-    else:
-        return 0
+def stm_release():
+    _spi_bus.close()

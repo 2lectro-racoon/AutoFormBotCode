@@ -1,4 +1,6 @@
 # gpio_pins.py
+# Deprecated: GPIO-based control (v1.x)
+# Replaced by STM32 SPI motor controller in v2.0
 
 # frozen namespace: disallows modification of predefined values
 from types import SimpleNamespace

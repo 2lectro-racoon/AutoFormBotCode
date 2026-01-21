@@ -4,7 +4,7 @@ echo "🧼 Setting up OLED clear service..."
 
 USER_NAME=$(whoami)
 SERVICE_FILE="/etc/systemd/system/oled_clear.service"
-PYTHON_PATH="/home/$USER_NAME/.oledenv/bin/python3"
+PYTHON_PATH="/home/$USER_NAME/.afbvenv/bin/python3"
 SCRIPT_PATH="/home/$USER_NAME/AutoFormBotCode/scripts/i2c/oled_clear.py"
 
 # Create the systemd service file
