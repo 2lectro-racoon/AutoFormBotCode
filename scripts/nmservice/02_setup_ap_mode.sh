@@ -57,21 +57,24 @@ else
     echo "📁 dnsmasq config already up-to-date."
 fi
 
-echo "🌐 Setting static IP for wlan0..."
-sudo rfkill unblock wifi
-sudo ip link set wlan0 down
-sudo iw dev wlan0 set type __ap
-sleep 1
-sudo iw dev wlan0 set channel 6
-sudo ip addr flush dev wlan0
-sudo ip addr add 192.168.4.1/24 dev wlan0
-sudo ip link set wlan0 up
-
 echo "⚙️ Updating NetworkManager unmanaged settings..."
 sudo mkdir -p /etc/NetworkManager/conf.d
 UNMANAGED_CONF=/etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
 echo -e "[keyfile]\nunmanaged-devices=interface-name:wlan0" | sudo tee "$UNMANAGED_CONF" > /dev/null
 sudo systemctl restart NetworkManager
+
+echo "🌐 Setting static IP for wlan0..."
+# Ensure NM doesn't fight us (in addition to unmanaged config file)
+sudo nmcli device set wlan0 managed no || true
+
+sudo rfkill unblock wifi
+sudo ip link set wlan0 down
+sudo iw dev wlan0 set type __ap
+sleep 2
+sudo iw dev wlan0 set channel 6
+sudo ip addr flush dev wlan0
+sudo ip link set wlan0 up
+sudo ip addr add 192.168.4.1/24 dev wlan0
 
 for svc in hostapd dnsmasq; do
     echo "🔍 Ensuring $svc is unmasked and enabled..."
@@ -79,5 +82,12 @@ for svc in hostapd dnsmasq; do
     sudo systemctl enable "$svc"
     sudo systemctl restart "$svc"
 done
+
+echo "🔁 Re-asserting wlan0 IP (in case it was cleared)..."
+# If the address is missing, add it again
+if ! ip -4 addr show dev wlan0 | grep -q "192\\.168\\.4\\.1/24"; then
+  sudo ip addr flush dev wlan0
+  sudo ip addr add 192.168.4.1/24 dev wlan0
+fi
 
 echo "✅ AP mode setup complete."
