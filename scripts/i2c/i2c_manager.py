@@ -474,7 +474,6 @@ class I2CManager:
                 ssid = self.cache.ssid
                 ip = self.cache.ip
                 batt = self.cache.battery_percent
-                dist = self.cache.distance_mm
 
             # Build 3 lines for 128x32 (default font ~8px)
             # Line1: MODE + battery
@@ -487,10 +486,9 @@ class I2CManager:
                 ssid_show = ssid_show[:16]
             line2 = f"SSID:{ssid_show}"
 
-            # Line3: IP + distance
+            # Line3: IP only (distance removed)
             ip_show = ip if ip else "0.0.0.0"
-            dist_str = "----" if dist is None else f"{dist:4d}"
-            line3 = f"IP:{ip_show} D:{dist_str}"
+            line3 = f"IP:{ip_show}"
             if len(line3) > 21:
                 line3 = line3[:21]
 
