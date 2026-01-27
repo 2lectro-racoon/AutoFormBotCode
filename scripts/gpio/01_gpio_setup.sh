@@ -1,40 +1,69 @@
 #!/bin/bash
+set -e
 
 echo "📦 Setting up lgpio, SPI (spidev), and Python virtual environment..."
 
-# 1. Create and activate virtual environment
-if [ -d ".afbvenv" ]; then
-    echo "🔁 Virtual environment '.afbvenv' already exists. Activating..."
-else
-    echo "🆕 Creating virtual environment '.afbvenv'..."
-    python3.11 -m venv .afbvenv
-fi
-source .afbvenv/bin/activate
+VENV_NAME=".afbvenv"
+VENV_PYTHON="$VENV_NAME/bin/python3"
 
-# lgpio: GPIO access from userspace
+# -----------------------------
+# 0) System packages
+# -----------------------------
 
-sudo apt install -y swig python3-dev build-essential
-sudo apt install -y lgpio
-
-# 2. Install Python packages for low-level hardware access
-pip install --upgrade pip
-
-# lgpio: legacy GPIO access (used only for STM32 NRST reset)
-pip install lgpio
-
-# spidev: SPI communication with STM32
-pip install spidev
-
-# mmap is part of Python standard library (no installation required)
-
-# 3. Install required system packages
 sudo apt update
 
-# python3-spidev: system-level SPI bindings (backup for non-venv execution)
-sudo apt install -y python3-spidev
+# Build deps for pip-installing lgpio (SWIG + compiler + Python headers)
+sudo apt install -y --no-install-recommends \
+  swig \
+  python3-dev \
+  build-essential
 
-echo "✅ lgpio and SPI (spidev) setup complete!"
-echo "🔄 Virtual environment '.afbvenv' is ready and lgpio system package is installed."
+# System-level SPI bindings (useful as a fallback)
+sudo apt install -y --no-install-recommends python3-spidev
+
+# Ensure SPI is enabled is handled elsewhere (raspi-config). We only install deps here.
+
+# -----------------------------
+# 1) Create and activate venv
+# -----------------------------
+
+if [ -d "$VENV_NAME" ]; then
+  echo "🔁 Virtual environment '$VENV_NAME' already exists. Activating..."
+else
+  echo "🆕 Creating virtual environment '$VENV_NAME'..."
+  python3 -m venv "$VENV_NAME"
+fi
+
+# shellcheck disable=SC1090
+source "$VENV_NAME/bin/activate"
+
+pip install --upgrade pip
+
+# -----------------------------
+# 2) lgpio (Blinka backend dependency)
+# -----------------------------
+
+# Some distros ship only the runtime library: liblgpio.so.1
+# But building the Python wheel needs the linker name: liblgpio.so
+# If liblgpio.so is missing but liblgpio.so.1 exists, create a symlink.
+LIBDIR="/usr/lib/aarch64-linux-gnu"
+if [ -f "$LIBDIR/liblgpio.so.1" ] && [ ! -e "$LIBDIR/liblgpio.so" ]; then
+  echo "🔧 Creating symlink for lgpio: $LIBDIR/liblgpio.so -> liblgpio.so.1"
+  sudo ln -sf "$LIBDIR/liblgpio.so.1" "$LIBDIR/liblgpio.so"
+  sudo ldconfig
+fi
+
+# Install lgpio into the venv (needed by Adafruit Blinka on many RPi OS builds)
+# Use --no-cache-dir to avoid stale build artifacts.
+pip install --no-cache-dir lgpio
+
+# -----------------------------
+# 3) SPI (spidev)
+# -----------------------------
+
+pip install --no-cache-dir spidev
+
+echo "✅ lgpio + spidev setup complete!"
 
 deactivate
 echo "👋 Virtual environment deactivated."

@@ -51,7 +51,7 @@ except Exception:  # pragma: no cover
 # Configuration
 # ----------------------------
 
-UDS_PATH = "/run/afb_i2c.sock"
+UDS_PATH = "/run/autoformbot/afb_i2c.sock"
 
 OLED_WIDTH = 128
 OLED_HEIGHT = 32
@@ -293,8 +293,19 @@ class I2CManager:
         # UDS server socket
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
 
-        # Ensure /run exists and clean old socket
-        os.makedirs(os.path.dirname(UDS_PATH), exist_ok=True)
+        # Ensure runtime directory exists and is writable, then clean old socket
+        uds_dir = os.path.dirname(UDS_PATH)
+        try:
+            os.makedirs(uds_dir, exist_ok=True)
+        except Exception as e:
+            raise RuntimeError(f"Failed to create UDS directory: {uds_dir}: {e}")
+
+        if not os.access(uds_dir, os.W_OK | os.X_OK):
+            raise PermissionError(
+                f"UDS directory is not writable: {uds_dir}. "
+                "If running under systemd, set RuntimeDirectory=autoformbot (or run as root)."
+            )
+
         try:
             if os.path.exists(UDS_PATH):
                 os.unlink(UDS_PATH)
@@ -302,7 +313,9 @@ class I2CManager:
             pass
 
         self.sock.bind(UDS_PATH)
-        # Make it readable by non-root users (education-friendly)
+
+        # Make it readable/writable by non-root users (education-friendly)
+        # Note: For production, prefer a dedicated group + 0660.
         try:
             os.chmod(UDS_PATH, 0o666)
         except Exception:
