@@ -19,12 +19,15 @@ iface_type() {
 ensure_managed_for_scan() {
   # Make sure NetworkManager manages wlan0 and the iface is in managed mode
   sudo rm -f /etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
-  sudo nmcli dev set "$INTERFACE" managed yes || true
+  # NM often needs a restart to reliably pick up unmanaged-devices changes
+  sudo systemctl restart NetworkManager || true
+  sleep 1
   sudo ip link set "$INTERFACE" down || true
   sleep 0.5
   sudo iw dev "$INTERFACE" set type managed || true
   sleep 0.5
   sudo ip link set "$INTERFACE" up || true
+  sudo nmcli dev set "$INTERFACE" managed yes || true
 }
 
 stop_ap_services_if_any() {
@@ -170,11 +173,16 @@ if [[ -n "$SSID_FOUND" ]]; then
 
   log "✅ Known SSID '$SSID_FOUND' found. Connecting to it..."
   enable_sta_mode
+  # After switching to STA mode, ensure NM is really managing wlan0 before bringing the connection up
+  sudo systemctl restart NetworkManager || true
+  sleep 1
+  sudo nmcli dev set "$INTERFACE" managed yes || true
   log "🔗 Bringing up connection on $INTERFACE for SSID '$SSID_FOUND'..."
   sleep 2
   # Make sure AP IP is not left behind when moving to STA
   cleanup_ap_ip
-  sudo nmcli con up "$SSID_FOUND" ifname $INTERFACE
+  sudo nmcli con up "$SSID_FOUND" ifname "$INTERFACE" || true
+  # If NM autoconnect is enabled, con up may not block; wait for connected state
 
   if wait_for_nm_connected 10; then
     log "✅ Connection established to '$SSID_FOUND'."
