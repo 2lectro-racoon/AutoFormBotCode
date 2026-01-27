@@ -5,6 +5,27 @@
 set -e
 
 
+# Notes:
+# - This script may be executed by systemd (as root) where SUDO_UID is not set.
+# - Always force wlan0 out of STA/NM control before enabling AP.
+
+INTERFACE="wlan0"
+AP_IP_CIDR="192.168.4.1/24"
+UNMANAGED_CONF="/etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf"
+CHANNEL="6"   # 2.4GHz
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+wait_iface_type() {
+  local want="$1"; local tries=${2:-20}; local i type
+  for i in $(seq 1 "$tries"); do
+    type=$(iw dev "$INTERFACE" info 2>/dev/null | awk '/\btype\b/{print $2; exit}')
+    if [[ "$type" == "$want" ]]; then return 0; fi
+    sleep 0.2
+  done
+  return 1
+}
+
 SSID="$1"
 echo "[DEBUG] Received SSID in setup_ap_mode: '$1'"
 echo "[DEBUG] Parsed SSID: '$SSID'"
@@ -14,10 +35,8 @@ if [[ -z "$SSID" ]]; then
   exit 1
 fi
 
-USER_HOME=$(getent passwd "$SUDO_UID" | cut -d: -f6)
-AUTOFORM_PATH="$USER_HOME/AutoFormBotCode"
 
-echo "🔧 Setting up Access Point mode..."
+log "🔧 Setting up Access Point mode..."
 
 echo "[DEBUG] Writing ssid: '$SSID' into hostapd.conf"
 
@@ -26,7 +45,7 @@ interface=wlan0
 driver=nl80211
 ssid=${SSID}
 hw_mode=g
-channel=6
+channel=${CHANNEL}
 wmm_enabled=0
 macaddr_acl=0
 auth_algs=1
@@ -57,37 +76,60 @@ else
     echo "📁 dnsmasq config already up-to-date."
 fi
 
+# Stop services that may conflict with AP
+log "🛑 Stopping conflicting services (if any)..."
+sudo systemctl stop wpa_supplicant 2>/dev/null || true
+sudo systemctl stop hostapd 2>/dev/null || true
+sudo systemctl stop dnsmasq 2>/dev/null || true
+
+# Disconnect wlan0 from any STA connection and prevent NM from fighting AP
+sudo nmcli dev disconnect "$INTERFACE" 2>/dev/null || true
+sudo nmcli device set "$INTERFACE" managed no 2>/dev/null || true
+
+# Drop any STA IPs and routes before assigning AP IP
+sudo ip addr flush dev "$INTERFACE" 2>/dev/null || true
+
 echo "⚙️ Updating NetworkManager unmanaged settings..."
 sudo mkdir -p /etc/NetworkManager/conf.d
-UNMANAGED_CONF=/etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf
 echo -e "[keyfile]\nunmanaged-devices=interface-name:wlan0" | sudo tee "$UNMANAGED_CONF" > /dev/null
+log "🔁 Restarting NetworkManager (apply unmanaged config)..."
 sudo systemctl restart NetworkManager
+sleep 1
 
 echo "🌐 Setting static IP for wlan0..."
 # Ensure NM doesn't fight us (in addition to unmanaged config file)
-sudo nmcli device set wlan0 managed no || true
+sudo nmcli device set "$INTERFACE" managed no || true
 
 sudo rfkill unblock wifi
-sudo ip link set wlan0 down
-sudo iw dev wlan0 set type __ap
-sleep 2
-sudo iw dev wlan0 set channel 6
-sudo ip addr flush dev wlan0
-sudo ip link set wlan0 up
-sudo ip addr add 192.168.4.1/24 dev wlan0
+sudo ip link set "$INTERFACE" down
+sudo iw dev "$INTERFACE" set type __ap
+# Wait until the kernel reports AP type
+if ! wait_iface_type "AP" 15; then
+  # Some drivers report __ap instead of AP
+  wait_iface_type "__ap" 5 || true
+fi
+sudo iw dev "$INTERFACE" set channel "$CHANNEL"
+sudo ip addr flush dev "$INTERFACE"
+sudo ip link set "$INTERFACE" up
+sudo ip addr add "$AP_IP_CIDR" dev "$INTERFACE"
 
 for svc in hostapd dnsmasq; do
     echo "🔍 Ensuring $svc is unmasked and enabled..."
     sudo systemctl unmask "$svc"
     sudo systemctl enable "$svc"
-    sudo systemctl restart "$svc"
+    sudo systemctl start "$svc"
 done
 
 echo "🔁 Re-asserting wlan0 IP (in case it was cleared)..."
-# If the address is missing, add it again
-if ! ip -4 addr show dev wlan0 | grep -q "192\\.168\\.4\\.1/24"; then
-  sudo ip addr flush dev wlan0
-  sudo ip addr add 192.168.4.1/24 dev wlan0
+sudo ip link set "$INTERFACE" up || true
+if ! ip -4 addr show dev "$INTERFACE" | grep -q "192\\.168\\.4\\.1/24"; then
+  sudo ip addr flush dev "$INTERFACE"
+  sudo ip addr add "$AP_IP_CIDR" dev "$INTERFACE"
 fi
+
+log "✅ AP setup summary:"
+log "- iface type: $(iw dev "$INTERFACE" info 2>/dev/null | awk '/\btype\b/{print $2; exit}')"
+log "- ip: $(ip -4 addr show dev "$INTERFACE" | awk '/inet /{print $2; exit}')"
+log "- hostapd: $(systemctl is-active hostapd 2>/dev/null || true)"
 
 echo "✅ AP mode setup complete."
