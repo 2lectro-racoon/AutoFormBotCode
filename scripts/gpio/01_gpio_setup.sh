@@ -3,8 +3,9 @@ set -e
 
 echo "📦 Setting up lgpio, SPI (spidev), and Python virtual environment..."
 
-VENV_NAME=".afbvenv"
-VENV_PYTHON="$VENV_NAME/bin/python3"
+# Always use a single shared venv under the user's HOME so services and shells match
+VENV_DIR="$HOME/.afbvenv"
+VENV_PYTHON="$VENV_DIR/bin/python3"
 
 # -----------------------------
 # 0) System packages
@@ -27,15 +28,15 @@ sudo apt install -y --no-install-recommends python3-spidev
 # 1) Create and activate venv
 # -----------------------------
 
-if [ -d "$VENV_NAME" ]; then
-  echo "🔁 Virtual environment '$VENV_NAME' already exists. Activating..."
+if [ -d "$VENV_DIR" ]; then
+  echo "🔁 Virtual environment '$VENV_DIR' already exists. Activating..."
 else
-  echo "🆕 Creating virtual environment '$VENV_NAME'..."
-  python3 -m venv "$VENV_NAME"
+  echo "🆕 Creating virtual environment '$VENV_DIR'..."
+  python3 -m venv "$VENV_DIR"
 fi
 
 # shellcheck disable=SC1090
-source "$VENV_NAME/bin/activate"
+source "$VENV_DIR/bin/activate"
 
 pip install --upgrade pip
 
@@ -63,7 +64,7 @@ pip install --no-cache-dir lgpio
 
 pip install --no-cache-dir spidev
 
-echo "✅ lgpio + spidev setup complete!"
+echo "✅ lgpio + spidev setup complete in $VENV_DIR!"
 
 deactivate
 echo "👋 Virtual environment deactivated."
