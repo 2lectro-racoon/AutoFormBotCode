@@ -119,6 +119,53 @@ def get_ssid() -> str:
     return ""
 
 
+def get_ap_ssid() -> str:
+    """Best-effort AP SSID read for hostapd / NetworkManager hotspot.
+
+    Tries, in order:
+    1) hostapd_cli status (fast, if available)
+    2) /etc/hostapd/hostapd.conf (common on Raspberry Pi OS)
+    3) nmcli active connections (when AP is managed by NetworkManager)
+    """
+    # 1) hostapd_cli
+    rc, out = _run_cmd(["hostapd_cli", "-i", "wlan0", "status"], timeout_s=0.8)
+    if rc == 0 and out:
+        for line in out.splitlines():
+            if line.startswith("ssid="):
+                ssid = line.split("=", 1)[1].strip()
+                if ssid:
+                    return ssid
+
+    # 2) hostapd.conf
+    conf_candidates = ["/etc/hostapd/hostapd.conf", "/etc/hostapd.conf"]
+    for conf in conf_candidates:
+        try:
+            with open(conf, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    s = line.strip()
+                    if not s or s.startswith("#"):
+                        continue
+                    if s.startswith("ssid="):
+                        ssid = s.split("=", 1)[1].strip()
+                        if ssid:
+                            return ssid
+        except Exception:
+            pass
+
+    # 3) nmcli active hotspot
+    rc, out = _run_cmd(["nmcli", "-t", "-f", "NAME,TYPE", "con", "show", "--active"], timeout_s=1.0)
+    if rc == 0 and out:
+        # Lines look like: <name>:wifi
+        for line in out.splitlines():
+            parts = line.split(":", 1)
+            if len(parts) == 2 and parts[1].strip() == "wifi":
+                name = parts[0].strip()
+                if name:
+                    return name
+
+    return ""
+
+
 def get_ip_addr(ifname: str) -> str:
     """Get IPv4 address for an interface via `ip` (no extra deps)."""
     rc, out = _run_cmd(["ip", "-4", "addr", "show", ifname], timeout_s=0.8)
@@ -150,7 +197,12 @@ def detect_mode_and_ip() -> Tuple[str, str, str]:
         mode = "STA"
     else:
         rc, out = _run_cmd(["systemctl", "is-active", "hostapd"], timeout_s=0.6)
-        mode = "AP" if (rc == 0 and out.strip() == "active") else "UNKNOWN"
+        is_ap = (rc == 0 and out.strip() == "active")
+        mode = "AP" if is_ap else "UNKNOWN"
+        if is_ap:
+            ap_ssid = get_ap_ssid()
+            if ap_ssid:
+                ssid = ap_ssid
 
     ip = get_ip_addr("wlan0")
     if not ip:
