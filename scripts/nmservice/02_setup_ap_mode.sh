@@ -30,9 +30,10 @@ SSID="$1"
 echo "[DEBUG] Received SSID in setup_ap_mode: '$1'"
 echo "[DEBUG] Parsed SSID: '$SSID'"
 
+# If SSID was not provided (common during fallback), use a safe default
 if [[ -z "$SSID" ]]; then
-  echo "❌ SSID is empty. Aborting to avoid overwriting hostapd.conf with blank SSID."
-  exit 1
+  SSID="Temp_SSID"
+  log "⚠️ SSID was empty. Using default SSID: '$SSID'"
 fi
 
 
@@ -41,7 +42,7 @@ log "🔧 Setting up Access Point mode..."
 echo "[DEBUG] Writing ssid: '$SSID' into hostapd.conf"
 
 HOSTAPD_CONF_CONTENT=$(cat <<EOF
-interface=wlan0
+interface=${INTERFACE}
 driver=nl80211
 ssid=${SSID}
 hw_mode=g
@@ -64,7 +65,7 @@ fi
 echo "CONFIG_FILE=/etc/hostapd/hostapd.conf" | sudo tee /etc/default/hostapd &> /dev/null
 
 DNSMASQ_CONF_CONTENT=$(cat <<EOF
-interface=wlan0
+interface=${INTERFACE}
 dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
 EOF
 )
