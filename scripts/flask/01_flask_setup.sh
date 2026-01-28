@@ -7,7 +7,7 @@ if [ -d ".afbvenv" ]; then
     echo "🔁 Virtual environment '.afbvenv' already exists. Activating..."
 else
     echo "🆕 Creating virtual environment '.afbvenv'..."
-    python3.11 -m venv .afbvenv
+    python3 -m venv .afbvenv
 fi
 source .afbvenv/bin/activate
 
