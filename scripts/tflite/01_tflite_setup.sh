@@ -7,9 +7,9 @@ if [ -d ".afbvenv" ]; then
     echo "🔁 Virtual environment '.afbvenv' already exists. Activating..."
 else
     echo "🆕 Creating virtual environment '.afbvenv'..."
-    python -m venv .afbvenv
+    python -m venv ~/.afbvenv
 fi
-source .afbvenv/bin/activate
+source ~/.afbvenv/bin/activate
 # 2. Install TensorFlow 2.20.0
 pip install --upgrade pip
 # TensorFlow 2.20.0 (Python 3.13 / aarch64 supported)

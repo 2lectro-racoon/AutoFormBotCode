@@ -7,9 +7,9 @@ if [ -d ".afbvenv" ]; then
     echo "🔁 Virtual environment '.afbvenv' already exists. Activating..."
 else
     echo "🆕 Creating virtual environment '.afbvenv'..."
-    python3 -m venv .afbvenv
+    python3 -m venv ~/.afbvenv
 fi
-source .afbvenv/bin/activate
+source ~/.afbvenv/bin/activate
 # 2. Install ultralytics Yolov11
 pip install --upgrade pip
 pip install ultralytics==8.3.104  --no-deps
