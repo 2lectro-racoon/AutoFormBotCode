@@ -30,6 +30,8 @@ import socket
 import subprocess
 import threading
 import time
+import csv
+import getpass
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 
@@ -56,11 +58,26 @@ UDS_PATH = "/run/autoformbot/afb_i2c.sock"
 OLED_WIDTH = 128
 OLED_HEIGHT = 32
 
+#
 # Update rates (Hz)
 SENSOR_HZ_VL53 = 30.0
 SENSOR_HZ_INA = 10.0
 SENSOR_HZ_MPU = 100.0
 OLED_HZ = 2.0
+
+# CSV logging
+# Logs are stored under /home/<USER>/afb_home/i2c_sensor_log_YYYY-MM-DD.csv by default.
+# USER can be overridden via env var AFB_USER (recommended for systemd).
+LOG_HZ = 10.0
+LOG_DIR_NAME = "afb_home"
+
+# Daily rolling:
+#   /home/<USER>/afb_home/i2c_sensor_log_YYYY-MM-DD.csv
+# A best-effort symlink is maintained:
+#   /home/<USER>/afb_home/i2c_sensor_log.csv  -> today's file
+LOG_BASE_NAME = "i2c_sensor_log"
+LOG_EXT = ".csv"
+LOG_FLUSH_SEC = 1.0
 
 # Battery percent estimation from INA219 bus voltage (2S Li-ion default)
 # - Use a LUT (piecewise linear interpolation) for a more realistic SoC curve.
@@ -376,6 +393,30 @@ class I2CManager:
         # EMA state for battery voltage smoothing
         self._bus_v_ema: Optional[float] = None
 
+        # CSV logger (10Hz)
+        self._log_file = None
+        self._log_writer = None
+        self._log_lock = threading.Lock()
+        self._log_buf: list[list[Any]] = []
+        self._log_last_flush = time.time()
+        self._log_date: Optional[str] = None
+
+        # Determine target user/home. Prefer explicit env override for reproducibility.
+        log_user = os.environ.get("AFB_USER") or os.environ.get("SUDO_USER") or os.environ.get("USER") or getpass.getuser()
+        home_dir = os.path.expanduser(f"~{log_user}")
+        if not home_dir or home_dir == "~":
+            home_dir = os.path.expanduser("~")
+
+        self._log_dir = os.path.join(home_dir, LOG_DIR_NAME)
+
+        try:
+            os.makedirs(self._log_dir, exist_ok=True)
+        except Exception as e:
+            raise RuntimeError(f"Failed to create log directory: {self._log_dir}: {e}")
+
+        # Open today's file
+        self._open_log_for_time(time.time())
+
     def close(self) -> None:
         # Clear OLED on shutdown
         try:
@@ -390,6 +431,83 @@ class I2CManager:
             except Exception:
                 pass
 
+        # Close CSV logger
+        try:
+            if self._log_writer is not None and self._log_file is not None and self._log_buf:
+                for r in self._log_buf:
+                    self._log_writer.writerow(r)
+                self._log_buf.clear()
+                self._log_file.flush()
+            if self._log_file is not None:
+                self._log_file.flush()
+                self._log_file.close()
+        except Exception:
+            pass
+
+    def _log_header(self) -> list[str]:
+        return [
+            "timestamp_iso",
+            "ts_unix",
+            "distance_mm",
+            "imu_ax_m_s2",
+            "imu_ay_m_s2",
+            "imu_az_m_s2",
+            "imu_gx_rad_s",
+            "imu_gy_rad_s",
+            "imu_gz_rad_s",
+            "imu_temp_c",
+        ]
+
+    def _open_log_for_time(self, t_unix: float) -> None:
+        """Open (or rotate to) the daily CSV log file for the given unix time."""
+        date_str = time.strftime("%Y-%m-%d", time.localtime(t_unix))
+        if self._log_date == date_str and self._log_file is not None and self._log_writer is not None:
+            return
+
+        # Close existing file
+        try:
+            if self._log_file is not None:
+                self._log_file.flush()
+                self._log_file.close()
+        except Exception:
+            pass
+
+        self._log_file = None
+        self._log_writer = None
+
+        # Build path like: i2c_sensor_log_YYYY-MM-DD.csv
+        dated_name = f"{LOG_BASE_NAME}_{date_str}{LOG_EXT}"
+        self._log_path = os.path.join(self._log_dir, dated_name)
+
+        # Open CSV in append mode; write header if it's a new file
+        try:
+            is_new = not os.path.exists(self._log_path) or os.path.getsize(self._log_path) == 0
+            self._log_file = open(self._log_path, "a", encoding="utf-8", newline="")
+            self._log_writer = csv.writer(self._log_file)
+            if is_new:
+                self._log_writer.writerow(self._log_header())
+                self._log_file.flush()
+        except Exception as e:
+            raise RuntimeError(f"Failed to open CSV log file: {self._log_path}: {e}")
+
+        self._log_date = date_str
+
+        # Best-effort: keep a stable symlink to today's file
+        # /home/<USER>/afb_home/i2c_sensor_log.csv -> i2c_sensor_log_YYYY-MM-DD.csv
+        try:
+            link_path = os.path.join(self._log_dir, f"{LOG_BASE_NAME}{LOG_EXT}")
+            tmp_link = link_path + ".tmp"
+            try:
+                if os.path.islink(tmp_link) or os.path.exists(tmp_link):
+                    os.unlink(tmp_link)
+            except Exception:
+                pass
+            os.symlink(self._log_path, tmp_link)
+            os.replace(tmp_link, link_path)
+        except Exception:
+            # Symlink may fail on some systems/permissions; ignore.
+            pass
+
         try:
             self.sock.close()
         except Exception:
@@ -400,6 +518,56 @@ class I2CManager:
                 os.unlink(UDS_PATH)
         except Exception:
             pass
+    def _loop_csv_logger(self) -> None:
+        """Log distance + IMU readings to CSV at a fixed rate.
+
+        This logs the latest cached values (single-owner I2C model) rather than
+        reading sensors directly here.
+        """
+        period = 1.0 / max(LOG_HZ, 1.0)
+        while not self.stop_event.is_set():
+            t0 = time.time()
+
+            with self.lock:
+                dist = self.cache.distance_mm
+                accel = self.cache.imu_accel_m_s2
+                gyro = self.cache.imu_gyro_rad_s
+                temp_c = self.cache.imu_temp_c
+
+            # Convert timestamp to ISO string in local time
+            iso = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t0)) + f".{int((t0 % 1.0) * 1000):03d}"
+
+            # Rotate daily (local time)
+            try:
+                self._open_log_for_time(t0)
+            except Exception:
+                # If rotation/open fails, keep running without crashing
+                pass
+
+            ax = ay = az = None
+            gx = gy = gz = None
+            if accel is not None:
+                ax, ay, az = accel
+            if gyro is not None:
+                gx, gy, gz = gyro
+
+            try:
+                if self._log_writer is not None and self._log_file is not None:
+                    row = [iso, f"{t0:.6f}", dist, ax, ay, az, gx, gy, gz, temp_c]
+                    with self._log_lock:
+                        self._log_buf.append(row)
+                        if (t0 - self._log_last_flush) >= float(LOG_FLUSH_SEC):
+                            for r in self._log_buf:
+                                self._log_writer.writerow(r)
+                            self._log_buf.clear()
+                            self._log_file.flush()
+                            self._log_last_flush = t0
+            except Exception:
+                # Never crash the process due to logging I/O
+                pass
+
+            dt = time.time() - t0
+            time.sleep(max(0.0, period - dt))
 
     # ------------------------
     # Worker loops
@@ -597,6 +765,7 @@ class I2CManager:
             threading.Thread(target=self._loop_ina219, name="ina219", daemon=True),
             threading.Thread(target=self._loop_status, name="status", daemon=True),
             threading.Thread(target=self._loop_oled, name="oled", daemon=True),
+            threading.Thread(target=self._loop_csv_logger, name="csvlog", daemon=True),
             threading.Thread(target=self._loop_uds_server, name="uds", daemon=True),
         ]
 
