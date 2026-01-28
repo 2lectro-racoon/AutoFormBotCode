@@ -92,21 +92,38 @@ def reset() -> None:
             - /dev/gpiomem maps the GPIO block starting at offset 0.
             - /dev/mem requires mapping the physical GPIO base address.
         """
-        # 1) Try /dev/gpiomem* first (most convenient when present).
-        #    On newer kernels (e.g., Raspberry Pi 5), the driver may expose
-        #    multiple devices like /dev/gpiomem0..N instead of a single /dev/gpiomem.
-        gpiomem_candidates = ["/dev/gpiomem"] + [f"/dev/gpiomem{i}" for i in range(0, 16)]
+        # 1) Try gpiomem devices first (no root typically required).
+        #
+        # On newer kernels (e.g., Raspberry Pi 5), the driver may expose multiple
+        # devices like /dev/gpiomem0..N. Only gpiomem0 contains the full GPIO window
+        # we need (GPFSEL/GPSET/GPCLR). The other region devices are tiny windows
+        # (e.g., 0x20/0x40) and will fail mmap if we request a full page.
+        gpiomem_candidates = ["/dev/gpiomem0", "/dev/gpiomem"]
+
         for path in gpiomem_candidates:
             try:
                 _fd = os.open(path, os.O_RDWR | os.O_SYNC)
-                _mem = mmap.mmap(
-                    _fd,
-                    max(GPIO_LEN, mmap.PAGESIZE),
-                    mmap.MAP_SHARED,
-                    mmap.PROT_READ | mmap.PROT_WRITE,
-                    offset=0,
-                )
-                return _fd, _mem
+
+                # Raspberry Pi 5 gpiomem0 GPIO window size is commonly 0x30000.
+                # Try mapping the full window first, then fall back to one page.
+                lengths = [0x30000, max(GPIO_LEN, mmap.PAGESIZE)] if path.endswith("gpiomem0") else [max(GPIO_LEN, mmap.PAGESIZE)]
+
+                for length in lengths:
+                    try:
+                        _mem = mmap.mmap(
+                            _fd,
+                            length,
+                            mmap.MAP_SHARED,
+                            mmap.PROT_READ | mmap.PROT_WRITE,
+                            offset=0,
+                        )
+                        return _fd, _mem
+                    except OSError:
+                        # Try the next length (or next candidate)
+                        continue
+
+                os.close(_fd)
+
             except FileNotFoundError:
                 continue
             except PermissionError:
