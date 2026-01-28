@@ -29,7 +29,7 @@ Environment=PYTHONUNBUFFERED=1
 Environment=AFB_USER=$USER_NAME
 
 # Ensure the service user can access I2C / GPIO devices (depends on distro setup)
-SupplementaryGroups=i2c,gpio,video
+SupplementaryGroups=i2c gpio video
 
 # Create /run/autoformbot at runtime (owned by root but writable as needed)
 RuntimeDirectory=autoformbot
@@ -58,9 +58,12 @@ EOF
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable i2c_manager.service
-sudo systemctl restart i2c_manager.service
 
-echo "✅ i2c_manager service registered and started!"
+# NOTE: Do not start the service during install. Dependencies (pip packages) may not be ready yet.
+# Start it after the full install is complete (or after reboot).
+# sudo systemctl restart i2c_manager.service
+
+echo "✅ i2c_manager service registered! (start after install/reboot)"
 
 echo "\nUseful commands:"
 echo "  sudo systemctl status i2c_manager.service"
