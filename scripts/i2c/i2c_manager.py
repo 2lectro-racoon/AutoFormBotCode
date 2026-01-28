@@ -221,9 +221,9 @@ def detect_mode_and_ip() -> Tuple[str, str, str]:
             if ap_ssid:
                 ssid = ap_ssid
 
-    ip = get_ip_addr("wlan0")
+    ip = get_ip_addr("eth0")
     if not ip:
-        ip = get_ip_addr("eth0")
+        ip = get_ip_addr("wlan0")
 
     return mode, ssid, ip
 
