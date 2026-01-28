@@ -20,7 +20,9 @@ RESET_PULSE = 0.05      # Reset low time (seconds)
 
 # Raspberry Pi 4/5 GPIO base
 GPIO_BASE = 0xFE200000
-GPIO_LEN  = 0xF4
+# mmap length must be page-aligned on some kernels/drivers.
+# We only need a small subset of registers, but map at least one page.
+GPIO_LEN  = 0x1000
 
 # GPIO register offsets
 GPFSEL0 = 0x00
@@ -99,7 +101,7 @@ def reset() -> None:
                 _fd = os.open(path, os.O_RDWR | os.O_SYNC)
                 _mem = mmap.mmap(
                     _fd,
-                    GPIO_LEN,
+                    max(GPIO_LEN, mmap.PAGESIZE),
                     mmap.MAP_SHARED,
                     mmap.PROT_READ | mmap.PROT_WRITE,
                     offset=0,
@@ -122,14 +124,14 @@ def reset() -> None:
 
         _mem_full = mmap.mmap(
             _fd,
-            GPIO_LEN + delta,
+            max(GPIO_LEN, mmap.PAGESIZE) + delta,
             mmap.MAP_SHARED,
             mmap.PROT_READ | mmap.PROT_WRITE,
             offset=base,
         )
 
-        # Slice to the GPIO block start
-        _mem = memoryview(_mem_full)[delta:delta + GPIO_LEN]
+        effective_len = max(GPIO_LEN, mmap.PAGESIZE)
+        _mem = memoryview(_mem_full)[delta:delta + effective_len]
 
         # Wrap a lightweight object that exposes the same slicing interface
         class _MemWrap:
