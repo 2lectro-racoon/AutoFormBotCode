@@ -65,6 +65,10 @@ def _gpio_low(mem, pin: int) -> None:
 def reset() -> None:
     """Hardware reset for STM32 via NRST GPIO.
 
+    mmap backend selection order:
+        1) /dev/gpiomem mmap (preferred when available)
+        2) /dev/mem mmap at GPIO_BASE (fallback; typically requires sudo/root)
+
     This function asserts NRST low, then releases it and finally
     switches the pin to INPUT (High-Z) so STM32 internal pull-up
     takes over.
@@ -76,15 +80,70 @@ def reset() -> None:
     fd = None
     mem = None
 
-    try:
-        fd = os.open("/dev/gpiomem", os.O_RDWR | os.O_SYNC)
-        mem = mmap.mmap(
-            fd,
-            GPIO_LEN,
+    def _open_mmap() -> tuple[int, mmap.mmap]:
+        """Open an mmap for GPIO registers.
+
+        Returns:
+            (fd, mem) where mem is positioned at the GPIO register base.
+
+        Notes:
+            - /dev/gpiomem maps the GPIO block starting at offset 0.
+            - /dev/mem requires mapping the physical GPIO base address.
+        """
+        # 1) Try /dev/gpiomem first (most convenient when present).
+        try:
+            _fd = os.open("/dev/gpiomem", os.O_RDWR | os.O_SYNC)
+            _mem = mmap.mmap(
+                _fd,
+                GPIO_LEN,
+                mmap.MAP_SHARED,
+                mmap.PROT_READ | mmap.PROT_WRITE,
+                offset=0,
+            )
+            return _fd, _mem
+        except FileNotFoundError:
+            pass
+
+        # 2) Fallback to /dev/mem (usually needs root privileges).
+        _fd = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+
+        # mmap offset must be page-aligned
+        page_size = mmap.PAGESIZE
+        page_mask = ~(page_size - 1)
+        base = GPIO_BASE & page_mask
+        delta = GPIO_BASE - base
+
+        _mem_full = mmap.mmap(
+            _fd,
+            GPIO_LEN + delta,
             mmap.MAP_SHARED,
             mmap.PROT_READ | mmap.PROT_WRITE,
-            offset=0
+            offset=base,
         )
+
+        # Slice to the GPIO block start
+        _mem = memoryview(_mem_full)[delta:delta + GPIO_LEN]
+
+        # Wrap a lightweight object that exposes the same slicing interface
+        class _MemWrap:
+            def __init__(self, mv, parent):
+                self._mv = mv
+                self._parent = parent
+
+            def __getitem__(self, key):
+                return self._mv.__getitem__(key).tobytes() if isinstance(key, slice) else self._mv[key]
+
+            def __setitem__(self, key, value):
+                self._mv.__setitem__(key, value)
+
+            def close(self):
+                # Close the parent mmap
+                self._parent.close()
+
+        return _fd, _MemWrap(_mem, _mem_full)
+
+    try:
+        fd, mem = _open_mmap()
 
         # 1) Configure as output
         _gpio_set_output(mem, NRST_GPIO)
@@ -103,6 +162,19 @@ def reset() -> None:
 
         # 5) Release NRST line (High-Z)
         _gpio_set_input(mem, NRST_GPIO)
+
+    except PermissionError as e:
+        raise PermissionError(
+            "GPIO mmap failed due to insufficient permissions. "
+            "If /dev/gpiomem is missing, the fallback uses /dev/mem which typically "
+            "requires sudo/root. Try running with sudo, or enable /dev/gpiomem on your system."
+        ) from e
+
+    except FileNotFoundError as e:
+        raise FileNotFoundError(
+            "Neither /dev/gpiomem nor /dev/mem is available. "
+            "This environment cannot perform GPIO mmap access."
+        ) from e
 
     finally:
         if mem is not None:
