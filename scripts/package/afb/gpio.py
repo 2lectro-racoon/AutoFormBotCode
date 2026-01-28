@@ -15,7 +15,8 @@ from . import _spi_bus
 # ================== Configuration ==================
 # BCM pin connected to STM32 NRST
 NRST_GPIO = 23          # BCM numbering
-RESET_PULSE = 0.05      # Reset low time (seconds)
+RESET_PULSE = 0.20      # Reset low time (seconds)
+POST_RESET_DELAY = 0.20 # Time to wait after releasing reset (seconds)
 # ===================================================
 
 # Raspberry Pi 4/5 GPIO base
@@ -81,6 +82,41 @@ def reset() -> None:
     """
     fd = None
     mem = None
+
+    # Prefer lgpio when available (reliable across Pi 4/5 and different kernel mappings).
+    # This avoids fragile /dev/mem or gpiomem register layouts.
+    try:
+        import lgpio  # type: ignore
+
+        h = lgpio.gpiochip_open(0)
+        try:
+            # Drive NRST actively (push-pull) during the pulse.
+            lgpio.gpio_claim_output(h, NRST_GPIO, 1)
+
+            # Idle high
+            lgpio.gpio_write(h, NRST_GPIO, 1)
+            time.sleep(0.05)
+
+            # Assert reset (LOW)
+            lgpio.gpio_write(h, NRST_GPIO, 0)
+            time.sleep(RESET_PULSE)
+
+            # Release reset (HIGH)
+            lgpio.gpio_write(h, NRST_GPIO, 1)
+            time.sleep(POST_RESET_DELAY)
+
+            # Release NRST line (High-Z) so STM32 internal pull-up takes over.
+            # Not strictly required, but matches typical NRST wiring expectations.
+            lgpio.gpio_free(h, NRST_GPIO)
+            lgpio.gpio_claim_input(h, NRST_GPIO)
+
+            return
+        finally:
+            lgpio.gpiochip_close(h)
+
+    except Exception:
+        # Fall back to mmap method below.
+        pass
 
     def _open_mmap() -> tuple[int, mmap.mmap]:
         """Open an mmap for GPIO registers.
@@ -184,7 +220,7 @@ def reset() -> None:
 
         # 4) Release reset (HIGH)
         _gpio_high(mem, NRST_GPIO)
-        time.sleep(0.01)
+        time.sleep(POST_RESET_DELAY)
 
         # 5) Release NRST line (High-Z)
         _gpio_set_input(mem, NRST_GPIO)
