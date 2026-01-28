@@ -1,10 +1,10 @@
-
 #!/bin/bash
 set -e
 
 echo "🧩 Setting up I2C Manager service..."
 
-USER_NAME=$(whoami)
+# If this script is run with sudo, prefer the invoking user
+USER_NAME=${SUDO_USER:-$(whoami)}
 SERVICE_FILE="/etc/systemd/system/i2c_manager.service"
 PYTHON_PATH="/home/$USER_NAME/.afbvenv/bin/python3"
 SCRIPT_PATH="/home/$USER_NAME/AutoFormBotCode/scripts/i2c/i2c_manager.py"
@@ -25,9 +25,15 @@ Group=$USER_NAME
 WorkingDirectory=/home/$USER_NAME
 Environment=PYTHONUNBUFFERED=1
 
+# Ensure i2c_manager logs under /home/<USER>/afb_home even if env differs
+Environment=AFB_USER=$USER_NAME
+
+# Ensure the service user can access I2C / GPIO devices (depends on distro setup)
+SupplementaryGroups=i2c,gpio,video
+
 # Create /run/autoformbot at runtime (owned by root but writable as needed)
 RuntimeDirectory=autoformbot
-RuntimeDirectoryMode=0755
+RuntimeDirectoryMode=0775
 
 # Remove stale socket before start
 ExecStartPre=/bin/rm -f $UDS_PATH
@@ -36,6 +42,9 @@ ExecStart=$PYTHON_PATH $SCRIPT_PATH
 
 # Explicitly clear OLED on stop/shutdown
 ExecStopPost=$PYTHON_PATH $OLED_CLEAR_PATH
+
+StandardOutput=journal
+StandardError=journal
 
 Restart=always
 RestartSec=1
