@@ -90,19 +90,26 @@ def reset() -> None:
             - /dev/gpiomem maps the GPIO block starting at offset 0.
             - /dev/mem requires mapping the physical GPIO base address.
         """
-        # 1) Try /dev/gpiomem first (most convenient when present).
-        try:
-            _fd = os.open("/dev/gpiomem", os.O_RDWR | os.O_SYNC)
-            _mem = mmap.mmap(
-                _fd,
-                GPIO_LEN,
-                mmap.MAP_SHARED,
-                mmap.PROT_READ | mmap.PROT_WRITE,
-                offset=0,
-            )
-            return _fd, _mem
-        except FileNotFoundError:
-            pass
+        # 1) Try /dev/gpiomem* first (most convenient when present).
+        #    On newer kernels (e.g., Raspberry Pi 5), the driver may expose
+        #    multiple devices like /dev/gpiomem0..N instead of a single /dev/gpiomem.
+        gpiomem_candidates = ["/dev/gpiomem"] + [f"/dev/gpiomem{i}" for i in range(0, 16)]
+        for path in gpiomem_candidates:
+            try:
+                _fd = os.open(path, os.O_RDWR | os.O_SYNC)
+                _mem = mmap.mmap(
+                    _fd,
+                    GPIO_LEN,
+                    mmap.MAP_SHARED,
+                    mmap.PROT_READ | mmap.PROT_WRITE,
+                    offset=0,
+                )
+                return _fd, _mem
+            except FileNotFoundError:
+                continue
+            except PermissionError:
+                # If a candidate exists but is not accessible, keep searching.
+                continue
 
         # 2) Fallback to /dev/mem (usually needs root privileges).
         _fd = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
@@ -166,7 +173,7 @@ def reset() -> None:
     except PermissionError as e:
         raise PermissionError(
             "GPIO mmap failed due to insufficient permissions. "
-            "If /dev/gpiomem is missing, the fallback uses /dev/mem which typically "
+            "If /dev/gpiomem (or /dev/gpiomem0..N) is missing, the fallback uses /dev/mem which typically "
             "requires sudo/root. Try running with sudo, or enable /dev/gpiomem on your system."
         ) from e
 
