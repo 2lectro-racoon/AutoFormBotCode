@@ -272,7 +272,7 @@ def estimate_battery_percent(bus_voltage_v: Optional[float]) -> Optional[int]:
 @dataclass
 class SensorCache:
     ts: float = 0.0
-    distance_mm: Optional[int] = None
+    distance_mm: Optional[float] = None
     imu_accel_m_s2: Optional[Tuple[float, float, float]] = None
     imu_gyro_rad_s: Optional[Tuple[float, float, float]] = None
     imu_temp_c: Optional[float] = None
@@ -618,10 +618,11 @@ class I2CManager:
                         except Exception:
                             pass
                         if d is not None:
-                            dist = int(d)
+                            dist = d * 10
                             self._last_distance_mm = dist
                         else:
-                            dist = self._last_distance_mm
+                            # dist = self._last_distance_mm
+                            dist = None
                     else:
                         dist = self._last_distance_mm
                 except Exception:
