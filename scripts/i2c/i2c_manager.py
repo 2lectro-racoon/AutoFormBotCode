@@ -60,7 +60,7 @@ OLED_HEIGHT = 32
 
 #
 # Update rates (Hz)
-SENSOR_HZ_VL53 = 30.0
+SENSOR_HZ_VL53 = 10.0  # Match VL53L1X timing_budget=100ms
 SENSOR_HZ_INA = 10.0
 SENSOR_HZ_MPU = 100.0
 OLED_HZ = 2.0
@@ -393,6 +393,9 @@ class I2CManager:
         # EMA state for battery voltage smoothing
         self._bus_v_ema: Optional[float] = None
 
+        # Keep last valid distance to avoid jitter/None when a frame isn't ready
+        self._last_distance_mm: Optional[int] = None
+
         # CSV logger (10Hz)
         self._log_file = None
         self._log_writer = None
@@ -441,6 +444,18 @@ class I2CManager:
             if self._log_file is not None:
                 self._log_file.flush()
                 self._log_file.close()
+        except Exception:
+            pass
+
+        # Close UDS socket and remove socket file
+        try:
+            self.sock.close()
+        except Exception:
+            pass
+
+        try:
+            if os.path.exists(UDS_PATH):
+                os.unlink(UDS_PATH)
         except Exception:
             pass
 
@@ -507,17 +522,6 @@ class I2CManager:
         except Exception:
             # Symlink may fail on some systems/permissions; ignore.
             pass
-
-        try:
-            self.sock.close()
-        except Exception:
-            pass
-
-        try:
-            if os.path.exists(UDS_PATH):
-                os.unlink(UDS_PATH)
-        except Exception:
-            pass
     def _loop_csv_logger(self) -> None:
         """Log distance + IMU readings to CSV at a fixed rate.
 
@@ -544,16 +548,38 @@ class I2CManager:
                 # If rotation/open fails, keep running without crashing
                 pass
 
-            ax = ay = az = None
-            gx = gy = gz = None
-            if accel is not None:
-                ax, ay, az = accel
-            if gyro is not None:
-                gx, gy, gz = gyro
+            # Use string markers when a value is not available:
+            # - "NC": sensor Not Connected / not detected
+            # - "NL": No Latest reading available yet
+            # NOTE: This makes the CSV columns mixed-type (numbers + strings).
+
+            # Distance
+            if self.tof is None:
+                dist_out: Any = "NC"
+            else:
+                dist_out = "NL" if dist is None else int(dist)
+
+            # IMU
+            if self.mpu is None:
+                ax = ay = az = "NC"
+                gx = gy = gz = "NC"
+                temp_out: Any = "NC"
+            else:
+                if accel is None:
+                    ax = ay = az = "NL"
+                else:
+                    ax, ay, az = accel
+
+                if gyro is None:
+                    gx = gy = gz = "NL"
+                else:
+                    gx, gy, gz = gyro
+
+                temp_out = "NL" if temp_c is None else float(temp_c)
 
             try:
                 if self._log_writer is not None and self._log_file is not None:
-                    row = [iso, f"{t0:.6f}", dist, ax, ay, az, gx, gy, gz, temp_c]
+                    row = [iso, f"{t0:.6f}", dist_out, ax, ay, az, gx, gy, gz, temp_out]
                     with self._log_lock:
                         self._log_buf.append(row)
                         if (t0 - self._log_last_flush) >= float(LOG_FLUSH_SEC):
@@ -582,11 +608,24 @@ class I2CManager:
 
             if self.tof is not None:
                 try:
-                    d = self.tof.distance
-                    if d is not None:
-                        dist = int(d)
+                    # VL53L1X provides new frames at the configured timing_budget.
+                    # Use data_ready to avoid reading mid-cycle (can return None/old value).
+                    if getattr(self.tof, "data_ready", True):
+                        d = self.tof.distance
+                        # Clear interrupt so the next frame can be measured
+                        try:
+                            self.tof.clear_interrupt()
+                        except Exception:
+                            pass
+                        if d is not None:
+                            dist = int(d)
+                            self._last_distance_mm = dist
+                        else:
+                            dist = self._last_distance_mm
+                    else:
+                        dist = self._last_distance_mm
                 except Exception:
-                    dist = None
+                    dist = self._last_distance_mm
 
             with self.lock:
                 self.cache.distance_mm = dist
