@@ -7,10 +7,10 @@ from pathlib import Path
 OPENOCD = "openocd"
 
 # 스크립트 위치 기준 경로
-SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parents[1]          # .../AutoFormBotCode/scripts
-REPO_ROOT = REPO_ROOT.parent              # .../AutoFormBotCode
-DEFAULT_FW_DIR = REPO_ROOT / "firmware"   # .../AutoFormBotCode/firmware
+SCRIPT_DIR = Path(__file__).resolve().parent                 # .../AutoFormBotCode/scripts/firmware
+SCRIPTS_DIR = SCRIPT_DIR.parent                              # .../AutoFormBotCode/scripts
+REPO_ROOT = SCRIPTS_DIR.parent                               # .../AutoFormBotCode
+DEFAULT_FW_DIR = REPO_ROOT / "firmware"                      # .../AutoFormBotCode/firmware
 
 # 있으면 이 파일 사용 (핀 고정)
 CUSTOM_IF_CFG = SCRIPT_DIR / "rpi_swd.cfg"
