@@ -119,7 +119,7 @@ def main() -> None:
     print("[INFO] Detected   :", pi_label)
     print("[INFO] Using interface config:", if_cfg)
     print("[INFO] Firmware:", bin_path)
-    print("[INFO] Note: This script does NOT issue 'reset halt/run' to avoid NRST(mmap) conflicts.")
+    print("[INFO] Note: This script uses 'sysresetreq + reset halt' (core reset) to halt the CPU, avoiding NRST(mmap) conflicts.")
 
     # 업로드 로직(유지): flash write + verify
     cmd = [
@@ -127,9 +127,21 @@ def main() -> None:
         "-f", if_cfg,
         "-c", "transport select swd",
         "-f", TARGET_CFG,
+
+        # Init first
         "-c", "init",
+
+        # 방법 2) NRST 물리라인을 건드리지 않고(CORE reset), halt 상태 확보
+        "-c", "cortex_m reset_config sysresetreq",
+        "-c", "reset halt",
+
+        # Program + verify
         "-c", f"flash write_image erase {bin_path} {FLASH_ADDR}",
         "-c", f"verify_image {bin_path} {FLASH_ADDR}",
+
+        # (선택) 바로 실행시키고 싶으면 아래 한 줄을 주석 해제
+        # "-c", "reset run",
+
         "-c", "exit",
     ]
 
