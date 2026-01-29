@@ -100,6 +100,16 @@ def _get_cache(
 
     return _uds_rpc({"cmd": "get"}, uds_path=uds_path, timeout_sec=timeout_sec)
 
+def _to_float_or_nl(x: Any) -> Any:
+        if x is None:
+            return "NL"
+        try:
+            if isinstance(x, bool):
+                return "NL"
+            return float(x)
+        except Exception:
+            return "NL"
+
 
 def distance(
     uds_path: str = DEFAULT_UDS_PATH,
@@ -155,9 +165,28 @@ def mpu(
     if not (isinstance(gyro, (list, tuple)) and len(gyro) == 3):
         return None
 
-    try:
-        ax, ay, az = float(accel[0]), float(accel[1]), float(accel[2])
-        gx, gy, gz = float(gyro[0]), float(gyro[1]), float(gyro[2])
-        return [ax, ay, az, gx, gy, gz]
-    except Exception:
-        return None
+    # try:
+    #     ax, ay, az = float(accel[0]), float(accel[1]), float(accel[2])
+    #     gx, gy, gz = float(gyro[0]), float(gyro[1]), float(gyro[2])
+    #     return [ax, ay, az, gx, gy, gz]
+    # except Exception:
+    #     return None
+    
+        # Use "NL" marker for missing values (per-axis).
+
+    # accel/gyro may be missing or malformed; fill with "NL" in that case.
+    if not (isinstance(accel, (list, tuple)) and len(accel) == 3):
+        ax = ay = az = "NL"
+    else:
+        ax = _to_float_or_nl(accel[0])
+        ay = _to_float_or_nl(accel[1])
+        az = _to_float_or_nl(accel[2])
+
+    if not (isinstance(gyro, (list, tuple)) and len(gyro) == 3):
+        gx = gy = gz = "NL"
+    else:
+        gx = _to_float_or_nl(gyro[0])
+        gy = _to_float_or_nl(gyro[1])
+        gz = _to_float_or_nl(gyro[2])
+
+    return [ax, ay, az, gx, gy, gz]
