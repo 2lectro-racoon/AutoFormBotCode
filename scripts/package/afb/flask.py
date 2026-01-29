@@ -142,21 +142,27 @@ def key_control():
     global servo_angle
     key = request.form.get('key')
     if key == "ArrowUp":
-        afb.gpio.motor(100, 1, 1)
+        afb.car.motor(100)
+        # afb.gpio.motor(100, 1, 1)
     elif key == "ArrowDown":
-        afb.gpio.motor(100, -1, 1)
+        afb.car.motor(-100)
+        # afb.gpio.motor(100, -1, 1)
     elif key == "ArrowLeft":
         if servo_angle != 40:
-            afb.gpio.servo(40)
+            afb.car.servo(40)
+            # afb.gpio.servo(40)
             servo_angle = 40
     elif key == "ArrowRight":
         if servo_angle != 140:
-            afb.gpio.servo(140)
+            afb.car.servo(140)
+            # afb.gpio.servo(140)
             servo_angle = 140
     elif key == "stop":
-        afb.gpio.motor(0, 1, 1)
+        # afb.gpio.motor(0, 1, 1)
+        afb.car.motor(0)
         if servo_angle != 90:
-            afb.gpio.servo(90)
+            afb.car.servo(90)
+            # afb.gpio.servo(90)
             servo_angle = 90
     return ('', 204)
 
