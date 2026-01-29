@@ -160,10 +160,10 @@ def mpu(
     accel = imu.get("accel_m_s2")
     gyro = imu.get("gyro_rad_s")
 
-    if not (isinstance(accel, (list, tuple)) and len(accel) == 3):
-        return None
-    if not (isinstance(gyro, (list, tuple)) and len(gyro) == 3):
-        return None
+    # if not (isinstance(accel, (list, tuple)) and len(accel) == 3):
+    #     return None
+    # if not (isinstance(gyro, (list, tuple)) and len(gyro) == 3):
+    #     return None
 
     # try:
     #     ax, ay, az = float(accel[0]), float(accel[1]), float(accel[2])
