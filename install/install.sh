@@ -87,7 +87,7 @@ fi
 AUTOFORM_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "Copying /scripts/lec to \$HOME..."
-cp -r "$AUTOFORM_PATH/scripts/lec" "$HOME/lec"
+cp -r "$AUTOFORM_PATH/scripts/lec" "$HOME/afb_home/lec"
 bash "$AUTOFORM_PATH/scripts/nmservice/01_setup_web_server.sh"
 bash "$AUTOFORM_PATH/scripts/nmservice/05_enable_auto_wifi_service.sh" "$SSID"
 bash "$AUTOFORM_PATH/scripts/nmservice/07_enable_wifi_monitor.sh" "$SSID"
