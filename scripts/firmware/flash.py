@@ -12,11 +12,13 @@ SCRIPTS_DIR = SCRIPT_DIR.parent                              # .../AutoFormBotCo
 REPO_ROOT = SCRIPTS_DIR.parent                               # .../AutoFormBotCode
 DEFAULT_FW_DIR = REPO_ROOT / "firmware"                      # .../AutoFormBotCode/firmware
 
-# 있으면 이 파일 사용 (핀 고정)
-CUSTOM_IF_CFG = SCRIPT_DIR / "rpi_swd.cfg"
+# Pi4/Pi5 전용 interface cfg (repo에 넣어두는 파일)
+RPI4_IF_CFG = SCRIPT_DIR / "rpi4_swd.cfg"
+RPI5_IF_CFG = SCRIPT_DIR / "rpi5_swd.cfg"
 
-# 없으면 기본 설정 사용 (OpenOCD 내장 cfg)
-DEFAULT_IF_CFG = "interface/raspberrypi-swd.cfg"
+# fallback (OpenOCD 내장 cfg)
+DEFAULT_IF_CFG_PI4 = "interface/raspberrypi-swd.cfg"         # Pi4/legacy용
+DEFAULT_IF_CFG_PI5 = "interface/raspberrypi5-gpiod.cfg"      # Pi5용
 
 TARGET_CFG = "target/stm32f1x.cfg"
 FLASH_ADDR = "0x08000000"
@@ -42,6 +44,15 @@ def run(cmd: list[str]) -> None:
         sys.exit(1)
 
 
+def is_pi5() -> bool:
+    """Raspberry Pi 5 여부 판별 (가장 확실한 방법: device-tree model)."""
+    try:
+        model = Path("/proc/device-tree/model").read_text(errors="ignore")
+        return "Raspberry Pi 5" in model
+    except Exception:
+        return False
+
+
 def resolve_firmware_path(arg: str | None) -> Path:
     """펌웨어 경로 해석.
 
@@ -50,8 +61,7 @@ def resolve_firmware_path(arg: str | None) -> Path:
     - 인자가 파일명만이면: DEFAULT_FW_DIR 아래에서 찾음
     """
     if not arg:
-        candidate = DEFAULT_FW_DIR / "firmware.bin"
-        return candidate
+        return DEFAULT_FW_DIR / "firmware.bin"
 
     p = Path(arg).expanduser()
 
@@ -60,8 +70,29 @@ def resolve_firmware_path(arg: str | None) -> Path:
         return p
 
     # 파일명만 준 경우: 기본 firmware 폴더에서 탐색
-    candidate = DEFAULT_FW_DIR / p.name
-    return candidate
+    return DEFAULT_FW_DIR / p.name
+
+
+def pick_interface_cfg() -> tuple[str, str]:
+    """Pi4/Pi5 자동 감지 후 OpenOCD interface cfg 선택.
+
+    우선순위:
+      - Pi5: scripts/firmware/rpi5_swd.cfg (있으면)
+             -> 없으면 interface/raspberrypi5-gpiod.cfg
+      - Pi4: scripts/firmware/rpi4_swd.cfg (있으면)
+             -> 없으면 interface/raspberrypi-swd.cfg
+
+    반환: (if_cfg_path, detected_label)
+    """
+    if is_pi5():
+        if RPI5_IF_CFG.exists():
+            return str(RPI5_IF_CFG), "Raspberry Pi 5"
+        return DEFAULT_IF_CFG_PI5, "Raspberry Pi 5"
+
+    # Pi4/legacy
+    if RPI4_IF_CFG.exists():
+        return str(RPI4_IF_CFG), "Raspberry Pi 4/legacy"
+    return DEFAULT_IF_CFG_PI4, "Raspberry Pi 4/legacy"
 
 
 def main() -> None:
@@ -81,31 +112,25 @@ def main() -> None:
         print(f"       {DEFAULT_FW_DIR}/firmware.bin")
         sys.exit(1)
 
-    # interface cfg 선택 (스크립트 폴더에 rpi_swd.cfg가 있으면 그걸 우선)
-    if_cfg = str(CUSTOM_IF_CFG) if CUSTOM_IF_CFG.exists() else DEFAULT_IF_CFG
+    if_cfg, pi_label = pick_interface_cfg()
 
     print("[INFO] Script dir :", SCRIPT_DIR)
     print("[INFO] Repo root  :", REPO_ROOT)
+    print("[INFO] Detected   :", pi_label)
     print("[INFO] Using interface config:", if_cfg)
     print("[INFO] Firmware:", bin_path)
     print("[INFO] Note: This script does NOT issue 'reset halt/run' to avoid NRST(mmap) conflicts.")
 
+    # 업로드 로직(유지): flash write + verify
     cmd = [
         OPENOCD,
-        "-f",
-        if_cfg,
-        "-c",
-        "transport select swd",
-        "-f",
-        TARGET_CFG,
-        "-c",
-        "init",
-        "-c",
-        f"flash write_image erase {bin_path} {FLASH_ADDR}",
-        "-c",
-        f"verify_image {bin_path} {FLASH_ADDR}",
-        "-c",
-        "exit",
+        "-f", if_cfg,
+        "-c", "transport select swd",
+        "-f", TARGET_CFG,
+        "-c", "init",
+        "-c", f"flash write_image erase {bin_path} {FLASH_ADDR}",
+        "-c", f"verify_image {bin_path} {FLASH_ADDR}",
+        "-c", "exit",
     ]
 
     run(cmd)
