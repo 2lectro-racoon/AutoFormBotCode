@@ -55,6 +55,89 @@ except Exception:  # pragma: no cover
 
 
 # ----------------------------
+# Minimal MPU6050/MPU6500 compatible reader
+# ----------------------------
+
+import time
+from typing import Tuple
+
+class _MPU6xxxCompat:
+    """A tiny MPU6050/MPU6500 compatible reader.
+
+    Why this exists:
+    - Many "MPU6050" modules ship with MPU6500-class parts.
+    - WHO_AM_I differs (MPU6050 -> 0x68, MPU6500 -> 0x70), and some libraries reject it.
+
+    This reader supports both as long as the register map is compatible.
+    """
+
+    # Registers
+    _REG_WHO_AM_I = 0x75
+    _REG_PWR_MGMT_1 = 0x6B
+    _REG_ACCEL_XOUT_H = 0x3B
+
+    def __init__(self, i2c: busio.I2C, address: int = 0x68) -> None:
+        self.i2c = i2c
+        self.address = int(address)
+
+        who = self._read_u8(self._REG_WHO_AM_I)
+        # Accept common IDs: MPU6050(0x68), MPU6500(0x70). Keep it permissive.
+        if who not in (0x68, 0x70):
+            raise ValueError(f"Unsupported MPU WHO_AM_I=0x{who:02x} at 0x{self.address:02x}")
+
+        # Wake up device (clear sleep bit)
+        self._write_u8(self._REG_PWR_MGMT_1, 0x00)
+        time.sleep(0.05)
+
+    def _write_u8(self, reg: int, val: int) -> None:
+        buf = bytes([reg & 0xFF, val & 0xFF])
+        self.i2c.writeto(self.address, buf)
+
+    def _read_u8(self, reg: int) -> int:
+        out = bytearray(1)
+        self.i2c.writeto(self.address, bytes([reg & 0xFF]), stop=False)
+        self.i2c.readfrom_into(self.address, out)
+        return int(out[0])
+
+    @staticmethod
+    def _i16(msb: int, lsb: int) -> int:
+        v = ((msb & 0xFF) << 8) | (lsb & 0xFF)
+        return v - 65536 if v & 0x8000 else v
+
+    def read(self) -> Tuple[Tuple[float, float, float], Tuple[float, float, float], float]:
+        """Return (accel_m_s2, gyro_rad_s, temp_c)."""
+        buf = bytearray(14)
+        self.i2c.writeto(self.address, bytes([self._REG_ACCEL_XOUT_H]), stop=False)
+        self.i2c.readfrom_into(self.address, buf)
+
+        ax = self._i16(buf[0], buf[1])
+        ay = self._i16(buf[2], buf[3])
+        az = self._i16(buf[4], buf[5])
+        temp_raw = self._i16(buf[6], buf[7])
+        gx = self._i16(buf[8], buf[9])
+        gy = self._i16(buf[10], buf[11])
+        gz = self._i16(buf[12], buf[13])
+
+        # Assuming default ranges: accel +/-2g, gyro +/-250 dps
+        # Accel sensitivity: 16384 LSB/g
+        g_to_m_s2 = 9.80665
+        ax_m = (ax / 16384.0) * g_to_m_s2
+        ay_m = (ay / 16384.0) * g_to_m_s2
+        az_m = (az / 16384.0) * g_to_m_s2
+
+        # Gyro sensitivity: 131 LSB/(deg/s)
+        dps_to_rad_s = 3.141592653589793 / 180.0
+        gx_r = (gx / 131.0) * dps_to_rad_s
+        gy_r = (gy / 131.0) * dps_to_rad_s
+        gz_r = (gz / 131.0) * dps_to_rad_s
+
+        # Temperature in C: temp_raw/340 + 36.53
+        temp_c = (temp_raw / 340.0) + 36.53
+
+        return (ax_m, ay_m, az_m), (gx_r, gy_r, gz_r), float(temp_c)
+
+
+# ----------------------------
 # Configuration
 # ----------------------------
 
@@ -338,7 +421,13 @@ class I2CManager:
         self.i2c = busio.I2C(board.SCL, board.SDA)
 
         # Devices
-        self.ina = INA219(self.i2c)
+        # Optional INA219 (battery monitor)
+        self.ina = None
+        try:
+            self.ina = INA219(self.i2c)
+        except Exception:
+            self.ina = None
+
         # Optional distance sensor (VL53L0X / VL53L1X)
         # Priority: try VL53L0X first, then fall back to VL53L1X.
         self.tof = None
@@ -371,13 +460,27 @@ class I2CManager:
                 self.tof = None
                 self.tof_kind = ""
 
-        # Optional IMU (MPU6050)
+        # Optional IMU (MPU6050 / MPU6500-class)
         self.mpu = None
+        self.mpu_kind: str = ""  # "adafruit" | "compat" | ""
+
         if adafruit_mpu6050 is not None:
             try:
-                self.mpu = adafruit_mpu6050.MPU6050(self.i2c)
+                # Some modules report WHO_AM_I=0x70 (MPU6500-class) and may be rejected.
+                self.mpu = adafruit_mpu6050.MPU6050(self.i2c, address=0x68)
+                self.mpu_kind = "adafruit"
             except Exception:
                 self.mpu = None
+                self.mpu_kind = ""
+
+        # Fallback: accept MPU6050(0x68) and MPU6500(0x70)
+        if self.mpu is None:
+            try:
+                self.mpu = _MPU6xxxCompat(self.i2c, address=0x68)
+                self.mpu_kind = "compat"
+            except Exception:
+                self.mpu = None
+                self.mpu_kind = ""
 
         self.oled = adafruit_ssd1306.SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, self.i2c)
         self.oled.fill(0)
@@ -680,11 +783,19 @@ class I2CManager:
 
             if self.mpu is not None:
                 try:
-                    ax, ay, az = self.mpu.acceleration  # m/s^2
-                    gx, gy, gz = self.mpu.gyro  # rad/s
-                    accel = (float(ax), float(ay), float(az))
-                    gyro = (float(gx), float(gy), float(gz))
-                    temp_c = float(self.mpu.temperature)
+                    if getattr(self, "mpu_kind", "") == "compat":
+                        accel_t, gyro_t, t_c = self.mpu.read()  # type: ignore[attr-defined]
+                        ax, ay, az = accel_t
+                        gx, gy, gz = gyro_t
+                        accel = (float(ax), float(ay), float(az))
+                        gyro = (float(gx), float(gy), float(gz))
+                        temp_c = float(t_c)
+                    else:
+                        ax, ay, az = self.mpu.acceleration  # m/s^2
+                        gx, gy, gz = self.mpu.gyro  # rad/s
+                        accel = (float(ax), float(ay), float(az))
+                        gyro = (float(gx), float(gy), float(gz))
+                        temp_c = float(self.mpu.temperature)
                 except Exception:
                     accel = gyro = None
                     temp_c = None
@@ -709,21 +820,26 @@ class I2CManager:
             bus_v_ema = None
             batt_pct = None
 
-            try:
-                bus_v_raw = float(self.ina.bus_voltage)
-                cur_mA = float(self.ina.current)
-                p_mW = float(self.ina.power)
+            if self.ina is not None:
+                try:
+                    bus_v_raw = float(self.ina.bus_voltage)
+                    cur_mA = float(self.ina.current)
+                    p_mW = float(self.ina.power)
 
-                if self._bus_v_ema is None:
-                    self._bus_v_ema = bus_v_raw
-                else:
-                    a = float(BAT_VOLT_EWA_ALPHA)
-                    a = max(0.0, min(1.0, a))
-                    self._bus_v_ema = a * bus_v_raw + (1.0 - a) * self._bus_v_ema
+                    if self._bus_v_ema is None:
+                        self._bus_v_ema = bus_v_raw
+                    else:
+                        a = float(BAT_VOLT_EWA_ALPHA)
+                        a = max(0.0, min(1.0, a))
+                        self._bus_v_ema = a * bus_v_raw + (1.0 - a) * self._bus_v_ema
 
-                bus_v_ema = self._bus_v_ema
-                batt_pct = estimate_battery_percent(bus_v_ema)
-            except Exception:
+                    bus_v_ema = self._bus_v_ema
+                    batt_pct = estimate_battery_percent(bus_v_ema)
+                except Exception:
+                    bus_v_raw = cur_mA = p_mW = None
+                    bus_v_ema = None
+                    batt_pct = None
+            else:
                 bus_v_raw = cur_mA = p_mW = None
                 bus_v_ema = None
                 batt_pct = None
