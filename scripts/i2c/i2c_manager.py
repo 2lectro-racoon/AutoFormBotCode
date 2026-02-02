@@ -44,6 +44,11 @@ from adafruit_ina219 import INA219
 import adafruit_vl53l1x
 
 try:
+    import adafruit_vl53l0x
+except Exception:  # pragma: no cover
+    adafruit_vl53l0x = None  # type: ignore
+
+try:
     import adafruit_mpu6050
 except Exception:  # pragma: no cover
     adafruit_mpu6050 = None  # type: ignore
@@ -334,15 +339,37 @@ class I2CManager:
 
         # Devices
         self.ina = INA219(self.i2c)
-        # Optional distance sensor (VL53L1X)
+        # Optional distance sensor (VL53L0X / VL53L1X)
+        # Priority: try VL53L0X first, then fall back to VL53L1X.
         self.tof = None
-        try:
-            self.tof = adafruit_vl53l1x.VL53L1X(self.i2c)
-            self.tof.distance_mode = 1  # short
-            self.tof.timing_budget = 100  # ms
-            self.tof.start_ranging()
-        except Exception:
-            self.tof = None
+        self.tof_kind: str = ""  # "l0x" | "l1x" | ""
+
+        # Try VL53L0X
+        if adafruit_vl53l0x is not None:
+            try:
+                self.tof = adafruit_vl53l0x.VL53L0X(self.i2c)
+                # Typical timing budgets: ~20ms (faster) to 200ms (smoother)
+                # Keep it modest to match the 10Hz loop.
+                try:
+                    self.tof.measurement_timing_budget = 20000  # us
+                except Exception:
+                    pass
+                self.tof_kind = "l0x"
+            except Exception:
+                self.tof = None
+                self.tof_kind = ""
+
+        # Fall back to VL53L1X
+        if self.tof is None:
+            try:
+                self.tof = adafruit_vl53l1x.VL53L1X(self.i2c)
+                self.tof.distance_mode = 1  # short
+                self.tof.timing_budget = 100  # ms
+                self.tof.start_ranging()
+                self.tof_kind = "l1x"
+            except Exception:
+                self.tof = None
+                self.tof_kind = ""
 
         # Optional IMU (MPU6050)
         self.mpu = None
@@ -428,7 +455,7 @@ class I2CManager:
         except Exception:
             pass
 
-        if self.tof is not None:
+        if self.tof is not None and self.tof_kind == "l1x":
             try:
                 self.tof.stop_ranging()
             except Exception:
@@ -608,21 +635,28 @@ class I2CManager:
 
             if self.tof is not None:
                 try:
-                    # VL53L1X provides new frames at the configured timing_budget.
-                    # Use data_ready to avoid reading mid-cycle (can return None/old value).
-                    if getattr(self.tof, "data_ready", True):
-                        d = self.tof.distance
-                        # Clear interrupt so the next frame can be measured
-                        try:
-                            self.tof.clear_interrupt()
-                        except Exception:
-                            pass
-                        if d is not None:
-                            dist = d * 10
-                            self._last_distance_mm = dist
+                    if self.tof_kind == "l0x":
+                        # VL53L0X: `range` is already in mm
+                        d_mm = int(self.tof.range)
+                        dist = d_mm
+                        self._last_distance_mm = dist
+
+                    elif self.tof_kind == "l1x":
+                        # VL53L1X: distance is reported in cm
+                        if getattr(self.tof, "data_ready", True):
+                            d_cm = self.tof.distance
+                            try:
+                                self.tof.clear_interrupt()
+                            except Exception:
+                                pass
+                            if d_cm is not None:
+                                dist = int(d_cm) * 10
+                                self._last_distance_mm = dist
+                            else:
+                                dist = None
                         else:
-                            # dist = self._last_distance_mm
-                            dist = None
+                            dist = self._last_distance_mm
+
                     else:
                         dist = self._last_distance_mm
                 except Exception:

@@ -26,6 +26,7 @@ pip install \
   adafruit-blinka \
   adafruit-circuitpython-ssd1306 \
   adafruit-circuitpython-ina219 \
+  adafruit-circuitpython-vl53l0x \
   adafruit-circuitpython-vl53l1x \
   adafruit-circuitpython-mpu6050 \
   pillow \
