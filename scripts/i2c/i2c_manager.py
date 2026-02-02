@@ -87,9 +87,23 @@ class _MPU6xxxCompat:
         self.i2c.writeto(self.address, buf)
 
     def _read_u8(self, reg: int) -> int:
+        """Read a single byte from a register.
+
+        NOTE: `busio.I2C.writeto(..., stop=False)` is not supported on some Blinka versions.
+        Use `writeto_then_readfrom` when available (repeated-start), otherwise fall back to
+        a separate write+read.
+        """
         out = bytearray(1)
-        self.i2c.writeto(self.address, bytes([reg & 0xFF]), stop=False)
-        self.i2c.readfrom_into(self.address, out)
+        reg_b = bytes([reg & 0xFF])
+
+        if hasattr(self.i2c, "writeto_then_readfrom"):
+            # Repeated-start (preferred)
+            self.i2c.writeto_then_readfrom(self.address, reg_b, out)
+        else:
+            # Fallback: write register pointer, then read
+            self.i2c.writeto(self.address, reg_b)
+            self.i2c.readfrom_into(self.address, out)
+
         return int(out[0])
 
     @staticmethod
@@ -100,8 +114,12 @@ class _MPU6xxxCompat:
     def read(self) -> Tuple[Tuple[float, float, float], Tuple[float, float, float], float]:
         """Return (accel_m_s2, gyro_rad_s, temp_c)."""
         buf = bytearray(14)
-        self.i2c.writeto(self.address, bytes([self._REG_ACCEL_XOUT_H]), stop=False)
-        self.i2c.readfrom_into(self.address, buf)
+        reg_b = bytes([self._REG_ACCEL_XOUT_H])
+        if hasattr(self.i2c, "writeto_then_readfrom"):
+            self.i2c.writeto_then_readfrom(self.address, reg_b, buf)
+        else:
+            self.i2c.writeto(self.address, reg_b)
+            self.i2c.readfrom_into(self.address, buf)
 
         ax = self._i16(buf[0], buf[1])
         ay = self._i16(buf[2], buf[3])
