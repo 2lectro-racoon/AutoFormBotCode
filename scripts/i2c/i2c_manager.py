@@ -4,7 +4,7 @@
 - Reads:
   - INA219 (bus voltage / current / power)
   - VL53L1X (distance)
-  - MPU6050 (accel / gyro / temp) [optional]
+  - MPU6xxx (MPU6050/MPU6500-class) (accel / gyro / temp) [optional]
 - Displays on OLED:
   - Wi-Fi mode (STA/AP), SSID, IP
   - Battery percent (INA219 voltage-based)
@@ -48,18 +48,11 @@ try:
 except Exception:  # pragma: no cover
     adafruit_vl53l0x = None  # type: ignore
 
-try:
-    import adafruit_mpu6050
-except Exception:  # pragma: no cover
-    adafruit_mpu6050 = None  # type: ignore
 
 
 # ----------------------------
 # Minimal MPU6050/MPU6500 compatible reader
 # ----------------------------
-
-import time
-from typing import Tuple
 
 class _MPU6xxxCompat:
     """A tiny MPU6050/MPU6500 compatible reader.
@@ -461,26 +454,12 @@ class I2CManager:
                 self.tof_kind = ""
 
         # Optional IMU (MPU6050 / MPU6500-class)
+        # Use the common register-map reader only (education-friendly, robust to clone parts).
         self.mpu = None
-        self.mpu_kind: str = ""  # "adafruit" | "compat" | ""
-
-        if adafruit_mpu6050 is not None:
-            try:
-                # Some modules report WHO_AM_I=0x70 (MPU6500-class) and may be rejected.
-                self.mpu = adafruit_mpu6050.MPU6050(self.i2c, address=0x68)
-                self.mpu_kind = "adafruit"
-            except Exception:
-                self.mpu = None
-                self.mpu_kind = ""
-
-        # Fallback: accept MPU6050(0x68) and MPU6500(0x70)
-        if self.mpu is None:
-            try:
-                self.mpu = _MPU6xxxCompat(self.i2c, address=0x68)
-                self.mpu_kind = "compat"
-            except Exception:
-                self.mpu = None
-                self.mpu_kind = ""
+        try:
+            self.mpu = _MPU6xxxCompat(self.i2c, address=0x68)
+        except Exception:
+            self.mpu = None
 
         self.oled = adafruit_ssd1306.SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, self.i2c)
         self.oled.fill(0)
@@ -783,19 +762,12 @@ class I2CManager:
 
             if self.mpu is not None:
                 try:
-                    if getattr(self, "mpu_kind", "") == "compat":
-                        accel_t, gyro_t, t_c = self.mpu.read()  # type: ignore[attr-defined]
-                        ax, ay, az = accel_t
-                        gx, gy, gz = gyro_t
-                        accel = (float(ax), float(ay), float(az))
-                        gyro = (float(gx), float(gy), float(gz))
-                        temp_c = float(t_c)
-                    else:
-                        ax, ay, az = self.mpu.acceleration  # m/s^2
-                        gx, gy, gz = self.mpu.gyro  # rad/s
-                        accel = (float(ax), float(ay), float(az))
-                        gyro = (float(gx), float(gy), float(gz))
-                        temp_c = float(self.mpu.temperature)
+                    accel_t, gyro_t, t_c = self.mpu.read()  # type: ignore[attr-defined]
+                    ax, ay, az = accel_t
+                    gx, gy, gz = gyro_t
+                    accel = (float(ax), float(ay), float(az))
+                    gyro = (float(gx), float(gy), float(gz))
+                    temp_c = float(t_c)
                 except Exception:
                     accel = gyro = None
                     temp_c = None
