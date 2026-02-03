@@ -208,6 +208,6 @@ afb.sensor.mpu()
 # >>> [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z] raw 데이터 출력
 ```
 
-MPU의 경우 자율주행차량에는 미장착 되어있음  
+IMU의 경우 자율주행차량에는 미장착 되어있음  
 
 ---
