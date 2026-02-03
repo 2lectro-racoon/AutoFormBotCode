@@ -31,6 +31,7 @@ def leg(ch, a0, a1, a2) ->  None:
 
 def legReset() -> None:
 
+    time.sleep(0.5)
     _spi_bus.servo_set(0, 40)
     _spi_bus.servo_set(3, 135)
     _spi_bus.servo_set(6, 40)
@@ -47,17 +48,9 @@ def legReset() -> None:
     _spi_bus.servo_set(11, 0)
     time.sleep(0.5)
 
-    # _spi_bus.leg_set(0, 40, 0, 180)
-    # time.sleep(0.5)
-    # _spi_bus.leg_set(1, 135, 180, 0)
-    # time.sleep(0.5)
-    # _spi_bus.leg_set(2, 40, 0, 180)
-    # time.sleep(0.5)
-    # _spi_bus.leg_set(3, 135, 180, 0)
-    # time.sleep(0.5)
-
 def stand() -> None:
 
+    time.sleep(0.5)
     _spi_bus.servo_set(0, 90)
     _spi_bus.servo_set(3, 90)
     _spi_bus.servo_set(6, 90)
@@ -73,13 +66,3 @@ def stand() -> None:
     _spi_bus.servo_set(8, 90)
     _spi_bus.servo_set(11, 90)
     time.sleep(0.5)
-
-
-    # _spi_bus.leg_set(0, 90, 80, 90)
-    # time.sleep(0.5)
-    # _spi_bus.leg_set(1, 90, 100, 90)
-    # time.sleep(0.5)
-    # _spi_bus.leg_set(2, 90, 80, 90)
-    # time.sleep(0.5)
-    # _spi_bus.leg_set(3, 90, 100, 90)
-    # time.sleep(0.5)
