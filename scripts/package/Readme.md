@@ -190,5 +190,24 @@ afb.quad.stand()
 
 afb.quad.legReset()
 ```
+### 4.센서 값 읽기
+
+전면 거리센서  
+
+```python
+afb.sensor.distance()
+
+# >>> mm 단위로 전면 거리 값 출력(int형)
+```
+
+IMU 센서  
+
+```python
+afb.sensor.mpu()
+
+# >>> [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z] raw 데이터 출력
+```
+
+컨트롤 보드의 각 모드는 펌웨어로 구분, 출고 시 해당 펌웨어로 출고  
 
 ---
