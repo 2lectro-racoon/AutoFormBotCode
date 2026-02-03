@@ -95,7 +95,7 @@ afb.car.servo(angle) # 기본값 90(중심) 30~150 권장
 구동모터 제어
 
 ```python
-afb.car.motor(speed) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1)
+afb.car.motor(speed) # -255~255(기본값 0)
 ```
 or  
 
