@@ -26,3 +26,9 @@ def servo(ch, angle) -> List[int]:
 # Motor direction + speed
 def leg(ch, a0, a1, a2) ->  None:
     _spi_bus.leg_set(ch, a0, a1,a2)
+
+def legReset() -> None:
+    _spi_bus.leg_set(0, 40, 0, 180)
+    _spi_bus.leg_set(1, 135, 180, 0)
+    _spi_bus.leg_set(2, 40, 0, 180)
+    _spi_bus.leg_set(3, 135, 180, 0)
