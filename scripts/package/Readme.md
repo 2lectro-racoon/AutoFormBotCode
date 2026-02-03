@@ -2,7 +2,7 @@
 
 ## ✨ Overview
 
-AuotFormBot에 구동에 필요한 커스텀 패키지
+AuotFormBot에 구동에 필요한 커스텀 패키지 (ver 2.0.0)
 
 ---
 
@@ -10,9 +10,14 @@ AuotFormBot에 구동에 필요한 커스텀 패키지
 
 | 패키지명 | 설명 |
 |--------|---------|
-| `/afb/_gpio_pins.py` | 사전 정의 된 gpio pins |
-| `/afb/camera.py` | 카메라 관련 |
-| `/afb/gpio.py` | gpio 제어  |
+| `/afb/__init__.py` | AutoFormBot의 카메라, GPIO, 센서, 제어 기능을 하나의 `afb` 인터페이스로 통합하는 패키지 엔트리포인트 |
+| `/afb/_spi_bus.py` | 라즈베리파이 ↔ STM32 컨트롤 보드 간 SPI 통신을 담당하는 저수준 버스 모듈 |
+| `/afb/camera.py` | libcamera 기반 카메라 초기화 및 프레임 획득을 담당하는 모듈 |
+| `/afb/car.py` | 차량(자율주행차) 모드에서의 조향 및 구동 제어 로직 모듈 |
+| `/afb/flask.py` | Headless 환경에서 카메라 영상을 웹으로 확인하기 위한 Flask 기반 스트리밍 모듈 |
+| `/afb/gpio.py` | GPIO를 이용한 컨트롤 보드 초기화 및 제어 모듈 |
+| `/afb/quad.py` | 4족(거미형) 로봇 모드에서의 다리 및 관절 제어 로직 모듈 |
+| `/afb/sensor.py` | 거리 센서 및 IMU(MPU) 등 I2C 센서 값을 읽어오는 공용 센서 인터페이스 모듈 |
 
 ---
 
@@ -20,11 +25,16 @@ AuotFormBot에 구동에 필요한 커스텀 패키지
 
 ### 0. Activate AFB_venv
 
-파이썬 가상환경 활성화  
+파이썬 가상환경 활성화 또는 전용 경로 접속  
 
 ```bash
-source AFB_venv/bin/activate
+cd ~/afb_home
 ```
+
+```bash
+source ~/.afbvenv/bin/activate
+```
+
 파이썬 파일에서 패키지 임포트  
 
 ```python
@@ -55,7 +65,7 @@ afb.camera.release_camera()
 
 Headless 상황에서(SSH 접속 등) 최대 4채널의 영상 출력 지원  
 
-아래의 함수 실행 후 웹에서 라즈베리파이 IP:5000으로 접속 후 새로고침하여 사용
+아래의 함수 실행 후 웹에서 라즈베리파이 IP:5000/stream 으로 접속 후 새로고침하여 사용
 
 ```python
 afb.flask.imshow(title, frame, slot) # 영상 제목(문자열), 출력하고자 하는 영상 프레임, 위치(0, 1, 2, 3)
@@ -63,47 +73,55 @@ afb.flask.imshow(title, frame, slot) # 영상 제목(문자열), 출력하고자
 
 ![Flask 화면](/images/flask.png)
 
-### 3. Gpio
+### 3.A 컨트롤 보드 리셋
 
-gpio 초기설정  
+꼭 SPI통신 안정화를 위해 컨트롤 보드 제어 전 리셋 시행  
 
 ```python
-afb.gpio.init()
+afb.gpio.reset()
 ```
+
+컨트롤 보드의 각 모드는 펌웨어로 구분, 출고 시 해당 펌웨어로 출고  
+
+### 3.B 차량모드 제어
 
 조향 제어
 
 ```python
-afb.gpio.servo(angle) # 기본값 90(중심) 30~150 권장
+afb.car.servo(angle) # 기본값 90(중심) 30~150 권장
 ```
 
 구동모터 제어
 
 ```python
-afb.gpio.motor(speed, inverse, motor_id) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1), 1 or 2(기본값 1채널)
+afb.car.motor(speed) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1)
+
+afb.car.motor(speed, inverse) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1)
 ```
 
-전조등(LED) 제어
+
+### 3.C 쿼드모드 제어
+
+개별 관절(채널) 제어  
 
 ```python
-afb.gpio.led(left, right) # True or False (기본값 False)
+afb.quad.servo(ch, angle) # ch: 0~11채널, angle: 0~180 이나 채널 별로 간섭 여부 확인 필요
 ```
 
-TB6612FNG STBY핀 제어
+개별 다리 제어  
 
 ```python
-afb.gpio.stby(state) # 0 or 1 (기본값 False)
+afb.quad.leg(ch, angle0, angle1, angle2) # ch: 0~3, angle0,1,2: 0~180 이나 채널 별로 간섭 여부 확인 필요
 ```
-
-배터리 잔량 확인
+중립 자세  
 
 ```python
-afb.gpio.battery() # 100, 50, 10, 0 4가지 결과 출력
+afb.quad.stand()
 ```
-
-전체 해제
+기본 자세  
 
 ```python
-afb.gpio.stop_all()
+afb.quad.legReset() # ch: 0~3, angle0,1,2: 0~180 이나 채널 별로 간섭 여부 확인 필요
 ```
+
 ---
