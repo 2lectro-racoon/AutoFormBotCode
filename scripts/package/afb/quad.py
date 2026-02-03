@@ -40,11 +40,11 @@ def legReset() -> None:
     time.sleep(0.5)
 
 def stand() -> None:
-    _spi_bus.leg_set(0, 90, 40, 80)
+    _spi_bus.leg_set(0, 90, 50, 80)
     time.sleep(0.5)
-    _spi_bus.leg_set(1, 90, 140, 100)
+    _spi_bus.leg_set(1, 90, 130, 100)
     time.sleep(0.5)
-    _spi_bus.leg_set(2, 90, 40, 80)
+    _spi_bus.leg_set(2, 90, 50, 80)
     time.sleep(0.5)
-    _spi_bus.leg_set(3, 90, 140, 100)
+    _spi_bus.leg_set(3, 90, 130, 100)
     time.sleep(0.5)
