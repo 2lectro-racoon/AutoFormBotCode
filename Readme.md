@@ -115,5 +115,5 @@ deactivate
 반드시 출처를 명시해야 하며, 상업적 이용은 금지되어 있습니다.  
 자세한 내용은 [LICENSE.txt](LICENSE.txt)를 참조하세요.
 
-© 2025 Neogul (https://github.com/2lectro-racoon)  
-© 2025 Echoglow
+© 2026 Neogul (https://github.com/2lectro-racoon)  
+© 2026 Codeplant

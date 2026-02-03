@@ -1,4 +1,4 @@
-Copyright (c) 2025 Neogul (https://github.com/2lectro-racoon), Echoglow (main@echoglow.co.kr)
+Copyright (c) 2026 Neogul (https://github.com/2lectro-racoon), Codeplant (main@codeplant.co.kr)
 
 이 저장소의 모든 콘텐츠(회로도, PCB 설계, BOM, 코드 포함)는
 비상업적인 용도에 한하여 자유롭게 열람, 다운로드, 수정, 사용이 가능합니다.
@@ -9,7 +9,7 @@ Copyright (c) 2025 Neogul (https://github.com/2lectro-racoon), Echoglow (main@ec
 - 상업적 목적으로의 파생물 생성
 
 자료를 사용하는 경우 반드시 다음 사항을 지켜야 합니다:
-- 출처 표기: Neogul (https://github.com/2lectro-racoon), Echoglow (main@echoglow.co.kr)
+- 출처 표기: Neogul (https://github.com/2lectro-racoon), Codeplant (main@codeplant.co.kr)
 - 본 라이선스 전문을 함께 포함할 것
 
 본 자료는 "있는 그대로(as-is)" 제공되며, 사용에 따른 책임은 사용자에게 있습니다.
