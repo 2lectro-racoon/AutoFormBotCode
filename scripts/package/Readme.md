@@ -208,6 +208,6 @@ afb.sensor.mpu()
 # >>> [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z] raw 데이터 출력
 ```
 
-컨트롤 보드의 각 모드는 펌웨어로 구분, 출고 시 해당 펌웨어로 출고  
+MPU의 경우 자율주행차량에는 미장착 되어있음  
 
 ---
