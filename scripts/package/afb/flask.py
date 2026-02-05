@@ -28,6 +28,7 @@ def angles_api_json():
     return jsonify({"angles": angles})
 
 
+
 @app.route('/angles')
 def angles_view():
     """Render last-sent servo angles as an HTML grid."""
@@ -174,6 +175,41 @@ def angles_view():
 
     return html
 
+# --- Sensors endpoint ---
+@app.route('/sensors.json')
+def sensors_api_json():
+    """Return sensor readings as JSON for debugging/UI.
+
+    Expected sensor API:
+    - afb.sensor.distance() -> int mm
+    - afb.sensor.mpu() -> list/tuple of 6 floats (or values), missing values may be None
+    """
+    distance_mm = None
+    mpu = [None] * 6
+
+    # Distance
+    try:
+        d = afb.sensor.distance()
+        if d is not None:
+            distance_mm = int(d)
+    except Exception:
+        distance_mm = None
+
+    # MPU (6-axis)
+    try:
+        vals = afb.sensor.mpu()
+        if vals is not None:
+            vals = list(vals)
+            if len(vals) < 6:
+                vals = vals + [None] * (6 - len(vals))
+            elif len(vals) > 6:
+                vals = vals[:6]
+            mpu = vals
+    except Exception:
+        mpu = [None] * 6
+
+    return jsonify({"distance_mm": distance_mm, "mpu": mpu})
+
 streams = [{"frame": None, "name": None} for _ in range(4)]  # index 0–3
 server_started = False
 
@@ -275,6 +311,34 @@ def stream_viewer():
                 font-size: 18px;
                 line-height: 1.2;
             }
+            .sensors {
+                width: 100%;
+                max-width: 980px;
+                margin: 20px auto;
+                padding: 12px;
+                border: 1px solid #ccc;
+                background: #fff;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            }
+            .sensors-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-top: 10px;
+            }
+            .sensor-cell {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: center;
+            }
+            .sensor-label {
+                font-weight: 700;
+            }
+            .sensor-value {
+                margin-top: 6px;
+                font-size: 18px;
+                line-height: 1.2;
+            }
         </style>
         <script>
             const ORDER = [11, 10, 9, 0, 1, 2, 8, 7, 6, 3, 4, 5];
@@ -297,9 +361,34 @@ def stream_viewer():
                 }
             }
 
+            async function fetchSensors() {
+                try {
+                    const res = await fetch('/sensors.json', { cache: 'no-store' });
+                    const data = await res.json();
+
+                    const d = (data && data.distance_mm !== undefined) ? data.distance_mm : null;
+                    const distEl = document.getElementById('distance-mm');
+                    if (distEl) {
+                        distEl.textContent = (d === null || d === undefined) ? 'NL' : String(d);
+                    }
+
+                    const mpu = (data && data.mpu) ? data.mpu : [];
+                    for (let i = 0; i < 6; i++) {
+                        const el = document.getElementById('mpu-' + i);
+                        if (!el) continue;
+                        const v = mpu[i];
+                        el.textContent = (v === null || v === undefined) ? 'NL' : String(v);
+                    }
+                } catch (e) {
+                    // Ignore fetch errors
+                }
+            }
+
             document.addEventListener('DOMContentLoaded', () => {
                 fetchAngles();
+                fetchSensors();
                 setInterval(fetchAngles, 200);
+                setInterval(fetchSensors, 200);
             });
         </script>
     </head>
@@ -357,6 +446,41 @@ def stream_viewer():
                 </tr>
             </table>
             <p style="margin-top:10px; color:#666;">Updates every 200ms via <code>/angles.json</code></p>
+        </div>
+
+        <div class="sensors">
+            <h3>Sensors</h3>
+            <div class="sensors-grid">
+                <div class="sensor-cell">
+                    <div class="sensor-label">Distance (mm)</div>
+                    <div class="sensor-value"><span id="distance-mm">NL</span></div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-label">MPU Ax</div>
+                    <div class="sensor-value"><span id="mpu-0">NL</span></div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-label">MPU Ay</div>
+                    <div class="sensor-value"><span id="mpu-1">NL</span></div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-label">MPU Az</div>
+                    <div class="sensor-value"><span id="mpu-2">NL</span></div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-label">MPU Gx</div>
+                    <div class="sensor-value"><span id="mpu-3">NL</span></div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-label">MPU Gy</div>
+                    <div class="sensor-value"><span id="mpu-4">NL</span></div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-label">MPU Gz</div>
+                    <div class="sensor-value"><span id="mpu-5">NL</span></div>
+                </div>
+            </div>
+            <p style="margin-top:10px; color:#666;">Updates every 200ms via <code>/sensors.json</code></p>
         </div>
     </body>
     </html>
