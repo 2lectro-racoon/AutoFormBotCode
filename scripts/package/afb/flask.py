@@ -7,14 +7,11 @@ import afb
 
 app = Flask(__name__)
 
-@app.route('/angles')
-def angles_api():
-    """Return last-sent servo angles for debugging.
 
-    Notes:
-    - Values come from `afb.quad.getAngle()`.
-    - If quad cache is not available, return 12x None.
-    """
+# --- Angles endpoints ---
+@app.route('/angles.json')
+def angles_api_json():
+    """Return last-sent servo angles as JSON for debugging/UI."""
     try:
         angles = afb.quad.getAngle()  # expected: list of length 12
     except Exception:
@@ -29,6 +26,153 @@ def angles_api():
         angles = angles[:12]
 
     return jsonify({"angles": angles})
+
+
+@app.route('/angles')
+def angles_view():
+    """Render last-sent servo angles as an HTML grid."""
+    # Read angles from the same JSON logic.
+    try:
+        angles = afb.quad.getAngle()
+    except Exception:
+        angles = [None] * 12
+
+    if not isinstance(angles, list):
+        angles = list(angles)
+    if len(angles) < 12:
+        angles = angles + [None] * (12 - len(angles))
+    elif len(angles) > 12:
+        angles = angles[:12]
+
+    html = '''
+    <!doctype html>
+    <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>AFB Servo Angles</title>
+        <style>
+            body {
+                margin: 20px;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            }
+            .angles {
+                width: 100%;
+                max-width: 980px;
+                margin: 0 auto;
+                padding: 12px;
+                border: 1px solid #ccc;
+                background: #fff;
+            }
+            .angles-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+            }
+            .angles-table td {
+                border: 1px solid #ddd;
+                text-align: center;
+                padding: 10px;
+            }
+            .angles-ch {
+                font-weight: 700;
+            }
+            .angles-val {
+                font-size: 22px;
+                line-height: 1.2;
+            }
+            .hint {
+                margin-top: 10px;
+                color: #666;
+            }
+        </style>
+        <script>
+            const ORDER = [11, 10, 9, 0, 1, 2, 8, 7, 6, 3, 4, 5];
+
+            async function fetchAngles() {
+                try {
+                    const res = await fetch('/angles.json', { cache: 'no-store' });
+                    const data = await res.json();
+                    const angles = (data && data.angles) ? data.angles : [];
+
+                    for (let i = 0; i < ORDER.length; i++) {
+                        const ch = ORDER[i];
+                        const el = document.getElementById('angle-' + ch);
+                        if (!el) continue;
+                        const v = angles[ch];
+                        el.textContent = (v === null || v === undefined) ? 'NL' : String(v);
+                    }
+                } catch (e) {
+                    // Ignore fetch errors
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                fetchAngles();
+                setInterval(fetchAngles, 200);
+            });
+        </script>
+    </head>
+    <body>
+        <div class="angles">
+            <h2>Servo Angles (last sent)</h2>
+            <table class="angles-table">
+                <tr>
+                    <td class="angles-ch">CH11</td>
+                    <td class="angles-ch">CH10</td>
+                    <td class="angles-ch">CH9</td>
+                    <td class="angles-ch">CH0</td>
+                    <td class="angles-ch">CH1</td>
+                    <td class="angles-ch">CH2</td>
+                </tr>
+                <tr>
+                    <td class="angles-val"><span id="angle-11">NL</span></td>
+                    <td class="angles-val"><span id="angle-10">NL</span></td>
+                    <td class="angles-val"><span id="angle-9">NL</span></td>
+                    <td class="angles-val"><span id="angle-0">NL</span></td>
+                    <td class="angles-val"><span id="angle-1">NL</span></td>
+                    <td class="angles-val"><span id="angle-2">NL</span></td>
+                </tr>
+                <tr>
+                    <td class="angles-ch">CH8</td>
+                    <td class="angles-ch">CH7</td>
+                    <td class="angles-ch">CH6</td>
+                    <td class="angles-ch">CH3</td>
+                    <td class="angles-ch">CH4</td>
+                    <td class="angles-ch">CH5</td>
+                </tr>
+                <tr>
+                    <td class="angles-val"><span id="angle-8">NL</span></td>
+                    <td class="angles-val"><span id="angle-7">NL</span></td>
+                    <td class="angles-val"><span id="angle-6">NL</span></td>
+                    <td class="angles-val"><span id="angle-3">NL</span></td>
+                    <td class="angles-val"><span id="angle-4">NL</span></td>
+                    <td class="angles-val"><span id="angle-5">NL</span></td>
+                </tr>
+            </table>
+            <div class="hint">Updates every 200ms via <code>/angles.json</code></div>
+        </div>
+    </body>
+    </html>
+    '''
+
+    # Render initial values once (the JS will refresh after load).
+    def _fmt(v):
+        return 'NL' if (v is None) else str(v)
+
+    html = html.replace('<span id="angle-11">NL</span>', f'<span id="angle-11">{_fmt(angles[11])}</span>')
+    html = html.replace('<span id="angle-10">NL</span>', f'<span id="angle-10">{_fmt(angles[10])}</span>')
+    html = html.replace('<span id="angle-9">NL</span>', f'<span id="angle-9">{_fmt(angles[9])}</span>')
+    html = html.replace('<span id="angle-0">NL</span>', f'<span id="angle-0">{_fmt(angles[0])}</span>')
+    html = html.replace('<span id="angle-1">NL</span>', f'<span id="angle-1">{_fmt(angles[1])}</span>')
+    html = html.replace('<span id="angle-2">NL</span>', f'<span id="angle-2">{_fmt(angles[2])}</span>')
+    html = html.replace('<span id="angle-8">NL</span>', f'<span id="angle-8">{_fmt(angles[8])}</span>')
+    html = html.replace('<span id="angle-7">NL</span>', f'<span id="angle-7">{_fmt(angles[7])}</span>')
+    html = html.replace('<span id="angle-6">NL</span>', f'<span id="angle-6">{_fmt(angles[6])}</span>')
+    html = html.replace('<span id="angle-3">NL</span>', f'<span id="angle-3">{_fmt(angles[3])}</span>')
+    html = html.replace('<span id="angle-4">NL</span>', f'<span id="angle-4">{_fmt(angles[4])}</span>')
+    html = html.replace('<span id="angle-5">NL</span>', f'<span id="angle-5">{_fmt(angles[5])}</span>')
+
+    return html
 
 streams = [{"frame": None, "name": None} for _ in range(4)]  # index 0–3
 server_started = False
@@ -137,7 +281,7 @@ def stream_viewer():
 
             async function fetchAngles() {
                 try {
-                    const res = await fetch('/angles', { cache: 'no-store' });
+                    const res = await fetch('/angles.json', { cache: 'no-store' });
                     const data = await res.json();
                     const angles = (data && data.angles) ? data.angles : [];
 
@@ -212,7 +356,7 @@ def stream_viewer():
                     <td class="angles-val"><span id="angle-5">NL</span></td>
                 </tr>
             </table>
-            <p style="margin-top:10px; color:#666;">Updates every 200ms via <code>/angles</code></p>
+            <p style="margin-top:10px; color:#666;">Updates every 200ms via <code>/angles.json</code></p>
         </div>
     </body>
     </html>
