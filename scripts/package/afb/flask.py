@@ -339,6 +339,9 @@ def stream_viewer():
                 font-size: 18px;
                 line-height: 1.2;
             }
+            .sensor-wide {
+                grid-column: 1 / -1;
+            }
         </style>
         <script>
             const ORDER = [11, 10, 9, 0, 1, 2, 8, 7, 6, 3, 4, 5];
@@ -452,10 +455,6 @@ def stream_viewer():
             <h3>Sensors</h3>
             <div class="sensors-grid">
                 <div class="sensor-cell">
-                    <div class="sensor-label">Distance (mm)</div>
-                    <div class="sensor-value"><span id="distance-mm">NL</span></div>
-                </div>
-                <div class="sensor-cell">
                     <div class="sensor-label">MPU Ax</div>
                     <div class="sensor-value"><span id="mpu-0">NL</span></div>
                 </div>
@@ -478,6 +477,10 @@ def stream_viewer():
                 <div class="sensor-cell">
                     <div class="sensor-label">MPU Gz</div>
                     <div class="sensor-value"><span id="mpu-5">NL</span></div>
+                </div>
+                <div class="sensor-cell sensor-wide">
+                    <div class="sensor-label">Distance (mm)</div>
+                    <div class="sensor-value"><span id="distance-mm">NL</span></div>
                 </div>
             </div>
             <p style="margin-top:10px; color:#666;">Updates every 200ms via <code>/sensors.json</code></p>
