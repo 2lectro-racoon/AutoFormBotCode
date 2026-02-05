@@ -39,6 +39,16 @@ servo_angle = 90
 def flask_thread():
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
+def startServer() -> None:
+    """Start the Flask server if it is not already running.
+
+    This allows using the web UI (e.g. /stream, /angles) without calling imshow().
+    """
+    global server_started
+    if not server_started:
+        threading.Thread(target=flask_thread, daemon=True).start()
+        server_started = True
+
 @app.route('/video_feed/<int:slot>')
 def video_feed(slot):
     def generate():
@@ -300,12 +310,8 @@ def imshow(name, frame, slot):
         streams[slot]["frame"] = frame
         streams[slot]["name"] = name
 
-    if not server_started:
-        threading.Thread(target=flask_thread, daemon=True).start()
-        server_started = True
+    startServer()
 
 def capture():
-    global server_started
-    if not server_started:
-        flask_thread()
-        server_started = True
+    """Backward-compatible helper to start the Flask server."""
+    startServer()
