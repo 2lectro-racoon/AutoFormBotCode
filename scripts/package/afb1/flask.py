@@ -3,7 +3,7 @@ import threading
 from flask import Flask, Response, request
 import cv2
 import time
-import afb
+import afb1
 
 app = Flask(__name__)
 streams = [{"frame": None, "name": None} for _ in range(4)]  # index 0–3

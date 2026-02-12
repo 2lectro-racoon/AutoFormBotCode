@@ -3,7 +3,7 @@ import threading
 from flask import Flask, Response, request, jsonify
 import cv2
 import time
-import afb
+import afb2
 
 app = Flask(__name__)
 
@@ -13,7 +13,7 @@ app = Flask(__name__)
 def angles_api_json():
     """Return last-sent servo angles as JSON for debugging/UI."""
     try:
-        angles = afb.quad.getAngle()  # expected: list of length 12
+        angles = afb2.quad.getAngle()  # expected: list of length 12
     except Exception:
         angles = [None] * 12
 
@@ -34,7 +34,7 @@ def angles_view():
     """Render last-sent servo angles as an HTML grid."""
     # Read angles from the same JSON logic.
     try:
-        angles = afb.quad.getAngle()
+        angles = afb2.quad.getAngle()
     except Exception:
         angles = [None] * 12
 
@@ -189,7 +189,7 @@ def sensors_api_json():
 
     # Distance
     try:
-        d = afb.sensor.distance()
+        d = afb2.sensor.distance()
         if d is not None:
             distance_mm = int(d)
     except Exception:
@@ -197,7 +197,7 @@ def sensors_api_json():
 
     # MPU (6-axis)
     try:
-        vals = afb.sensor.mpu()
+        vals = afb2.sensor.mpu()
         if vals is not None:
             vals = list(vals)
             if len(vals) < 6:
@@ -252,7 +252,7 @@ def single_video_feed():
     def generate():
         global latest_frame
         while True:
-            frame = afb.camera.get_image()
+            frame = afb2.camera.get_image()
             latest_frame = frame.copy()
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             _, jpeg = cv2.imencode('.jpg', frame_rgb)
@@ -541,26 +541,26 @@ def key_control():
     global servo_angle
     key = request.form.get('key')
     if key == "ArrowUp":
-        afb.car.motor(100)
+        afb2.car.motor(100)
         # afb.gpio.motor(100, 1, 1)
     elif key == "ArrowDown":
-        afb.car.motor(-100)
+        afb2.car.motor(-100)
         # afb.gpio.motor(100, -1, 1)
     elif key == "ArrowLeft":
         if servo_angle != 40:
-            afb.car.servo(40)
+            afb2.car.servo(40)
             # afb.gpio.servo(40)
             servo_angle = 40
     elif key == "ArrowRight":
         if servo_angle != 140:
-            afb.car.servo(140)
+            afb2.car.servo(140)
             # afb.gpio.servo(140)
             servo_angle = 140
     elif key == "stop":
         # afb.gpio.motor(0, 1, 1)
-        afb.car.motor(0)
+        afb2.car.motor(0)
         if servo_angle != 90:
-            afb.car.servo(90)
+            afb2.car.servo(90)
             # afb.gpio.servo(90)
             servo_angle = 90
     return ('', 204)
