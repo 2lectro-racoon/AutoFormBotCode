@@ -21,7 +21,7 @@ AuotFormBot에 구동에 필요한 커스텀 패키지 (ver 2.0.0)
 
 ---
 
-## How To Use
+## How To Use [For v2 (Rev >= 1.2)]
 
 ### 0. Activate AFB_venv
 
@@ -39,7 +39,7 @@ source ~/.afbvenv/bin/activate
 파이썬 파일에서 패키지 임포트  
 
 ```python
-import afb
+import afb2
 ```
 
 ### 1. Camera
@@ -47,19 +47,19 @@ import afb
 카메라 초기설정  
 
 ```python
-afb.camera.init(width, height, framerate) # 기본값 640, 480, 30
+afb2.camera.init(width, height, framerate) # 기본값 640, 480, 30
 ```
 
 카메라 프레임 불러오기  
 
 ```python
-frame = afb.camera.get_image()
+frame = afb2.camera.get_image()
 ```
 
 카메라 해제  
 
 ```python
-afb.camera.release_camera()
+afb2.camera.release_camera()
 ```
 
 ### 2. Flask
@@ -69,21 +69,21 @@ Headless 상황에서(SSH 접속 등) 최대 4채널의 영상 출력 지원 및
 아래의 함수 실행 후 웹에서 라즈베리파이 IP:5000/stream 으로 접속 후 새로고침하여 사용
 
 ```python
-afb.flask.imshow(title, frame, slot) # 영상 제목(문자열), 출력하고자 하는 영상 프레임, 위치(0, 1, 2, 3)
+afb2.flask.imshow(title, frame, slot) # 영상 제목(문자열), 출력하고자 하는 영상 프레임, 위치(0, 1, 2, 3)
 ```
 카메라 사용 없이 각도 및 센서 값을 보고 싶다면 아래의 코드 샤용  
 ```python
-afb.flask.startServer() # 카메라 활성화 없이 플라스크 실행할 때 사용
+afb2.flask.startServer() # 카메라 활성화 없이 플라스크 실행할 때 사용
 ```
 
 ![Flask 화면](/images/flask.png)
 
-### 3.A 컨트롤 보드 리셋
+### 3.A 컨트롤 보드 리셋 
 
 꼭 SPI통신 안정화를 위해 컨트롤 보드 제어 전 리셋 시행  
 
 ```python
-afb.gpio.reset()
+afb2.gpio.reset()
 ```
 
 컨트롤 보드의 각 모드는 펌웨어로 구분, 출고 시 해당 펌웨어로 출고  
@@ -93,18 +93,18 @@ afb.gpio.reset()
 조향 제어
 
 ```python
-afb.car.servo(angle) # 기본값 90(중심) 30~150 권장
+afb2.car.servo(angle) # 기본값 90(중심) 30~150 권장
 ```
 
 구동모터 제어
 
 ```python
-afb.car.motor(speed) # -255~255(기본값 0)
+afb2.car.motor(speed) # -255~255(기본값 0)
 ```
 or  
 
 ```python
-afb.car.motor(speed, inverse) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1)
+afb2.car.motor(speed, inverse) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1)
 ```
 
 ### 3.C 쿼드모드 제어
@@ -128,7 +128,7 @@ afb.car.motor(speed, inverse) # -255~255(기본값 0), 1 or -1(기본값 1, 역�
 #|  8 |                       |  5 |
 #|---------------------------------|
 
-afb.quad.servo(ch, angle) # ch: 0~11채널, angle: 0~180 이나 채널 별로 간섭 여부 확인 필요
+afb2.quad.servo(ch, angle) # ch: 0~11채널, angle: 0~180 이나 채널 별로 간섭 여부 확인 필요
 ```
 
 개별 다리 제어  
@@ -150,7 +150,7 @@ afb.quad.servo(ch, angle) # ch: 0~11채널, angle: 0~180 이나 채널 별로 �
 #| ch2-a2 |                                       | ch1-a2 |
 #|---------------------------------------------------------|
 
-afb.quad.leg(ch, a0, a1, 2) # ch: 0~3, a0,1,2: 0~180 이나 채널 별로 간섭 여부 확인 필요
+afb2.quad.leg(ch, a0, a1, 2) # ch: 0~3, a0,1,2: 0~180 이나 채널 별로 간섭 여부 확인 필요
 ```
 중립 자세  
 
@@ -171,7 +171,7 @@ afb.quad.leg(ch, a0, a1, 2) # ch: 0~3, a0,1,2: 0~180 이나 채널 별로 간섭
 #|  90 |                           |  90 |
 #|---------------------------------------|
 
-afb.quad.stand()
+afb2.quad.stand()
 ```
 기본 자세  
 
@@ -192,14 +192,14 @@ afb.quad.stand()
 #| 180 |                           |   0 |
 #|---------------------------------------|
 
-afb.quad.legReset()
+afb2.quad.legReset()
 ```
-### 4.센서 값 읽기
+### 3.D 센서 값 읽기
 
 전면 거리센서  
 
 ```python
-afb.sensor.distance()
+afb2.sensor.distance()
 
 # >>> mm 단위로 전면 거리 값 출력(int형)
 ```
@@ -207,11 +207,97 @@ afb.sensor.distance()
 IMU 센서  
 
 ```python
-afb.sensor.mpu()
+afb2.sensor.mpu()
 
 # >>> [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z] raw 데이터 출력
 ```
 
 IMU의 경우 자율주행차량에는 미장착 되어있음  
 
+---
+
+## How To Use [For v1 (Rev < 1.2)] NOY TESTED
+
+### 0. Activate AFB_venv
+
+파이썬 가상환경 활성화 또는 전용 경로 접속  
+
+```bash
+cd ~/afb_home
+```
+or  
+
+```bash
+source ~/.afbvenv/bin/activate
+```
+
+파이썬 파일에서 패키지 임포트  
+
+```python
+import afb1
+```
+
+### 1. Camera
+
+카메라 초기설정  
+
+```python
+afb1.camera.init(width, height, framerate) # 기본값 640, 480, 30
+```
+
+카메라 프레임 불러오기  
+
+```python
+frame = afb1.camera.get_image()
+```
+
+카메라 해제  
+
+```python
+afb1.camera.release_camera()
+```
+
+### 2. Flask
+
+Headless 상황에서(SSH 접속 등) 최대 4채널의 영상 출력 지원  
+
+아래의 함수 실행 후 웹에서 라즈베리파이 IP:5000/stream으로 접속 후 새로고침하여 사용
+
+```python
+afb1.flask.imshow(title, frame, slot) # 영상 제목(문자열), 출력하고자 하는 영상 프레임, 위치(0, 1, 2, 3)
+```
+
+![Flask 화면](/images/flask.png)
+
+### 3. Gpio
+
+gpio 초기설정  
+
+```python
+afb1.gpio.init()
+```
+
+조향 제어
+
+```python
+afb1.gpio.servo(angle) # 기본값 90(중심) 30~150 권장
+```
+
+구동모터 제어
+
+```python
+afb1.gpio.motor(speed, inverse, motor_id) # -255~255(기본값 0), 1 or -1(기본값 1, 역방향 구동시 -1), 1 or 2(기본값 1채널)
+```
+
+TB6612FNG STBY핀 제어
+
+```python
+afb1.gpio.stby(state) # 0 or 1 (기본값 False)
+```
+
+전체 해제
+
+```python
+afb.gpio.stop_all()
+```
 ---
