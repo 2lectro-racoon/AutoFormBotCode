@@ -181,8 +181,8 @@ def sensors_api_json():
     """Return sensor readings as JSON for debugging/UI.
 
     Expected sensor API:
-    - afb.sensor.distance() -> int mm
-    - afb.sensor.mpu() -> list/tuple of 6 floats (or values), missing values may be None
+    - afb2.sensor.distance() -> int mm
+    - afb2.sensor.mpu() -> list/tuple of 6 floats (or values), missing values may be None
     """
     distance_mm = None
     mpu = [None] * 6

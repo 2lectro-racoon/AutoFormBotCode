@@ -38,7 +38,7 @@ def single_video_feed():
     def generate():
         global latest_frame
         while True:
-            frame = afb.camera.get_image()
+            frame = afb1.camera.get_image()
             latest_frame = frame.copy()
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             _, jpeg = cv2.imencode('.jpg', frame_rgb)
@@ -142,21 +142,21 @@ def key_control():
     global servo_angle
     key = request.form.get('key')
     if key == "ArrowUp":
-        afb.gpio.motor(100, 1, 1)
+        afb1.gpio.motor(100, 1, 1)
     elif key == "ArrowDown":
-        afb.gpio.motor(100, -1, 1)
+        afb1.gpio.motor(100, -1, 1)
     elif key == "ArrowLeft":
         if servo_angle != 40:
-            afb.gpio.servo(40)
+            afb1.gpio.servo(40)
             servo_angle = 40
     elif key == "ArrowRight":
         if servo_angle != 140:
-            afb.gpio.servo(140)
+            afb1.gpio.servo(140)
             servo_angle = 140
     elif key == "stop":
-        afb.gpio.motor(0, 1, 1)
+        afb1.gpio.motor(0, 1, 1)
         if servo_angle != 90:
-            afb.gpio.servo(90)
+            afb1.gpio.servo(90)
             servo_angle = 90
     return ('', 204)
 
