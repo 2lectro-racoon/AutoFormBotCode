@@ -15,7 +15,7 @@ STA모드시 무선랜 IP와 현재 연결된 SSID 0.91" OLED에서 확인 가�
 
 ### 주의사항
 
-네트워크 국가는 KR, wpa_supplicant을 통한 네트워크 관리가 아닌 NetworkManger를 통한 네트워크 관리
+초기 설치시에는 유선랜 연결 필수  
 
 ---
 
@@ -41,29 +41,14 @@ Raspberry pi imager를 사용해 Raspberry Pi OS (Bookworm 64bit)를 설치
 
 ![라즈베리파이 이미져 설정적용](images/imager_custom.png)
 ![라즈베리파이 이미져 SSH설정](images/imager_ssh.png)
+ 
 
-최초 설정시 설정을 편집하기에서 SSH 활성화 및 무선 LAN 설정 비활성화
-
-### 1. Set raspi-config
-
-![터미널](images/terminal.png)
-![라즈베리파이 설정창](images/raspi-config.png)
-
-```bash
-sudo raspi-config
-```
-3-I3(VNC)          Enable  
-3-I5(I2C)          Enable  
-3-I8(Remote GPIO)  Enable  
-5-L4(WLAN Country) KR  
-
-Finsh  
-
-### 2. git clone && Run the install.sh
+### 1. git clone && Run the install.sh
 
 ```bash
 cd ~
 git clone https://github.com/2lectro-racoon/AutoFormBotCode.git
+sudo apt update && sudo apt upgrade -y
 ./AutoFormBotCode/install/install.sh
 ```
 
@@ -74,7 +59,7 @@ git clone https://github.com/2lectro-racoon/AutoFormBotCode.git
 
 ![설치완료](images/install_done.png)
 
-### 3. Check AP & oled
+### 2. Check AP & oled
 
 재부팅후 아래와 같이 AP의 SSID가 검색되거나 OLED화면에 유선랜(연결되어있다면) IP가 뜨면 정상 설치된 것  
 
@@ -84,18 +69,26 @@ git clone https://github.com/2lectro-racoon/AutoFormBotCode.git
 
 ## AP모드에서 SSID 연결방법
 
-AP의 SSID(AFM-setup)에 접속  
+AP의 SSID(AFM)에 접속  
 인터넷 브라우저에서 192.168.4.1:8080 입력후 로봇에 연결하고자 하는 SSID 및 PW 입력 후 저장  
 만약에 숨겨진 인터넷이면 체크박스 선택  
 잠시 기다리면 STA모드로 변경 및 해당 SSID에 연결 및 oled에서 IP확인 가능  
+또는 AP 모드에서 다이렉트 연결 후 외부망 없이 사용 가능  
 
 ---
 ## Use Python venv and Package
 
+### Method 1. 전용 경로 접속
+```bash
+cd ~/afb_home
+```
+
+### Method 2. 직접 가상환경 활성화
+
 파이썬 가상환경 활성화  
 
 ```bash
-source AFB_venv/bin/activate
+source ~/.afbvenv/bin/activate
 ```
 
 파이썬 가상환경 비활성화  
