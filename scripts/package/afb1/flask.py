@@ -1,4 +1,6 @@
 TARGET_SIZE = (640, 480)  # (width, height)
+JPEG_QUALITY = 70         # Lower quality reduces CPU + bandwidth
+FRAME_INTERVAL = 1 / 30   # Target stream FPS
 import threading
 from flask import Flask, Response, request
 import cv2
@@ -6,46 +8,106 @@ import time
 import afb1
 
 app = Flask(__name__)
-streams = [{"frame": None, "name": None} for _ in range(4)]  # index 0–3
+ # Each slot keeps the latest *already encoded* JPEG to avoid per-client re-encode.
+streams = [
+    {"frame": None, "jpeg": None, "name": None, "ts": 0.0} for _ in range(4)
+]  # index 0–3
 server_started = False
 
 latest_frame = None
 servo_angle = 90
 
 def flask_thread():
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    # Enable threaded serving so multiple browser clients don't block each other.
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
 
 @app.route('/video_feed/<int:slot>')
 def video_feed(slot):
+    # Guard invalid slot indexes.
+    if slot < 0 or slot >= len(streams):
+        return ("Invalid slot", 404)
+
     def generate():
         try:
+            last_ts = 0.0
             while True:
-                frame = streams[slot]["frame"]
-                if frame is None:
+                item = streams[slot]
+                jpeg = item.get("jpeg")
+                ts = item.get("ts", 0.0)
+
+                # Wait until we have a frame.
+                if jpeg is None:
                     time.sleep(0.01)
                     continue
-                ret, buffer = cv2.imencode('.jpg', frame)
-                frame_bytes = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                time.sleep(0.03)
+
+                # If nothing changed, sleep a bit to reduce busy looping.
+                if ts == last_ts:
+                    time.sleep(0.005)
+                    continue
+
+                last_ts = ts
+                yield (
+                    b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n'
+                    b'Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n'
+                    b'Pragma: no-cache\r\n'
+                    b'Expires: 0\r\n\r\n' + jpeg + b'\r\n'
+                )
+
+                # Optional pacing (helps some browsers avoid buffering bursts).
+                time.sleep(FRAME_INTERVAL)
         except GeneratorExit:
             print(f"[INFO] Client disconnected from slot {slot}")
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+    resp = Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    # Some proxies (e.g., nginx) buffer by default; this header tells them not to.
+    resp.headers['X-Accel-Buffering'] = 'no'
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 @app.route('/video_feed')
 def single_video_feed():
     def generate():
         global latest_frame
+        last_time = 0.0
         while True:
             frame = afb1.camera.get_image()
             latest_frame = frame.copy()
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            _, jpeg = cv2.imencode('.jpg', frame_rgb)
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
-            time.sleep(0.03)
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+            # Encode once per loop, avoid extra colorspace roundtrips.
+            # Keep the stream in BGR -> JPEG (browsers can decode JPEG regardless).
+            ok, jpeg = cv2.imencode(
+                '.jpg',
+                cv2.resize(frame, TARGET_SIZE),
+                [int(cv2.IMWRITE_JPEG_QUALITY), JPEG_QUALITY],
+            )
+            if not ok:
+                time.sleep(0.01)
+                continue
+
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n'
+                b'Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n'
+                b'Pragma: no-cache\r\n'
+                b'Expires: 0\r\n\r\n' + jpeg.tobytes() + b'\r\n'
+            )
+
+            # Pace to target FPS.
+            now = time.time()
+            dt = now - last_time
+            last_time = now
+            sleep_s = max(0.0, FRAME_INTERVAL - dt)
+            time.sleep(sleep_s)
+
+    resp = Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    resp.headers['X-Accel-Buffering'] = 'no'
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 @app.route('/stream')
 def stream_viewer():
@@ -171,10 +233,21 @@ def imwrite():
 
 def imshow(name, frame, slot):
     global server_started
+
     frame = cv2.resize(frame, TARGET_SIZE)
+
     if 0 <= slot < 4:
-        streams[slot]["frame"] = frame
-        streams[slot]["name"] = name
+        # Encode once here (producer side) so each client doesn't re-encode.
+        ok, jpeg = cv2.imencode(
+            '.jpg',
+            frame,
+            [int(cv2.IMWRITE_JPEG_QUALITY), JPEG_QUALITY],
+        )
+        if ok:
+            streams[slot]["frame"] = frame
+            streams[slot]["jpeg"] = jpeg.tobytes()
+            streams[slot]["name"] = name
+            streams[slot]["ts"] = time.time()
 
     if not server_started:
         threading.Thread(target=flask_thread, daemon=True).start()
@@ -183,5 +256,5 @@ def imshow(name, frame, slot):
 def capture():
     global server_started
     if not server_started:
-        flask_thread()
+        threading.Thread(target=flask_thread, daemon=True).start()
         server_started = True
