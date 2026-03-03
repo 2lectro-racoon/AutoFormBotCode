@@ -25,8 +25,8 @@ Group=$USER_NAME
 WorkingDirectory=/home/$USER_NAME
 
 # Force Adafruit Blinka to use lgpio backend (works on both Raspberry Pi 4 and 5)
-Environment=BLINKA_FORCECHIP=BCM2XXX
-Environment=BLINKA_FORCEGPIO=lgpio
+# Environment=BLINKA_FORCECHIP=BCM2XXX
+# Environment=BLINKA_FORCEGPIO=lgpio
 
 Environment=PYTHONUNBUFFERED=1
 

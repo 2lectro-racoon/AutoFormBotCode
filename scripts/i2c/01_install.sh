@@ -30,7 +30,8 @@ pip install \
   adafruit-circuitpython-vl53l1x \
   adafruit-circuitpython-mpu6050 \
   pillow \
-  netifaces
+  netifaces \
+  rpi-lgpio \
 
 
 # 🎉 Done
