@@ -20,10 +20,19 @@ fi
 # ⭐ Activate the virtual environment
 source "$VENV_PATH/bin/activate"
 
-# 🔧 Build tools needed for lgpio (rpi-lgpio dependency)
+# 🔧 Build tools needed for rpi-lgpio/lgpio (native extension)
 # lgpio builds a native extension and requires swig.
-# sudo apt-get update
-sudo apt-get install -y swig build-essential python3-dev liblgpio-dev
+sudo apt-get update
+
+# Base build tools (always available)
+sudo apt-get install -y swig build-essential python3-dev
+
+# Optional system dev package for lgpio (may not exist on some Raspberry Pi OS/Debian repos)
+if apt-cache show liblgpio-dev >/dev/null 2>&1; then
+  sudo apt-get install -y liblgpio-dev
+else
+  echo "⚠️  liblgpio-dev not found in apt repos; continuing."
+fi
 
 # 📦 Install OLED dependencies
 pip install --upgrade pip
