@@ -20,6 +20,11 @@ fi
 # ⭐ Activate the virtual environment
 source "$VENV_PATH/bin/activate"
 
+# 🔧 Build tools needed for lgpio (rpi-lgpio dependency)
+# lgpio builds a native extension and requires swig.
+# sudo apt-get update
+sudo apt-get install -y swig build-essential python3-dev
+
 # 📦 Install OLED dependencies
 pip install --upgrade pip
 pip install \
@@ -31,8 +36,7 @@ pip install \
   adafruit-circuitpython-mpu6050 \
   pillow \
   netifaces \
-  rpi-lgpio \
-
+  rpi-lgpio
 
 # 🎉 Done
 echo "✅ Virtual environment setup complete."
