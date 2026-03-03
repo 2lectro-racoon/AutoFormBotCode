@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, Response
-import afb
+import afb1
 import time
 import cv2
 import threading
@@ -10,8 +10,8 @@ if not os.path.exists("captures"):
 
 app = Flask(__name__)
 
-afb.gpio.init()
-afb.camera.init(640, 480, 30)
+afb1.gpio.init()
+afb1.camera.init(640, 480, 30)
 servo_angle = 90
 
 latest_frame = None
@@ -19,7 +19,7 @@ latest_frame = None
 def generate():
     global latest_frame
     while True:
-        frame = afb.camera.get_image()
+        frame = afb1.camera.get_image()
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         latest_frame = frame_rgb.copy()
         _, jpeg = cv2.imencode('.jpg', frame_rgb)
@@ -49,21 +49,21 @@ def key():
     key = request.form.get("key")
 
     if key == "ArrowUp":
-        afb.gpio.motor(100, 1, 1)
+        afb1.gpio.motor(100, 1, 1)
     elif key == "ArrowDown":
-        afb.gpio.motor(100, -1, 1)
+        afb1.gpio.motor(100, -1, 1)
     elif key == "ArrowLeft":
         if servo_angle != 40:
-            afb.gpio.servo(40)
+            afb1.gpio.servo(40)
             servo_angle = 40
     elif key == "ArrowRight":
         if servo_angle != 140:
-            afb.gpio.servo(140)
+            afb1.gpio.servo(140)
             servo_angle = 140
     elif key == "stop":
-        afb.gpio.motor(0, 1, 1)
+        afb1.gpio.motor(0, 1, 1)
         if servo_angle != 90:
-            afb.gpio.servo(90)
+            afb1.gpio.servo(90)
             servo_angle = 90
 
     return '', 204

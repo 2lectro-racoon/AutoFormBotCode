@@ -1,24 +1,24 @@
-import afb
+import afb1
 import time
 
-afb.gpio.init()  # GPIO 초기화
+afb1.gpio.init()  # GPIO 초기화
 
 try:
     while True:
         print("왼쪽 전조등 ON")
-        afb.gpio.led(True, False)
+        afb1.gpio.led(True, False)
         time.sleep(1)
 
         print("오른쪽 전조등 ON")
-        afb.gpio.led(False, True)
+        afb1.gpio.led(False, True)
         time.sleep(1)
 
         print("전조등 OFF")
-        afb.gpio.led(False, False)
+        afb1.gpio.led(False, False)
         time.sleep(1)
 
 except KeyboardInterrupt:
     print("LED 제어 종료")
 
 finally:
-    afb.gpio.stop_all()  # 전체 해제
+    afb1.gpio.stop_all()  # 전체 해제

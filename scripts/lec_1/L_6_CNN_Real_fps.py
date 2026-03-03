@@ -1,4 +1,4 @@
-import afb
+import afb1
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -11,8 +11,8 @@ model = load_model('cnn_goleftright_model.h5')
 class_names = ['go', 'left', 'right']
 
 # 시스템 초기화
-afb.camera.init(640, 480, 15)
-afb.gpio.init()
+afb1.camera.init(640, 480, 15)
+afb1.gpio.init()
 
 # 저장용 설정 (fps는 일단 5.0으로 초기화, 실제는 추론 기준)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -30,10 +30,10 @@ try:
         prev_time = curr_time
 
         # 전진 모터 구동
-        afb.gpio.motor(60)
+        afb1.gpio.motor(60)
 
         # 프레임 캡처
-        frame = afb.camera.get_image()
+        frame = afb1.camera.get_image()
         
         frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         out.write(frame_bgr)  # 영상 저장
@@ -55,11 +55,11 @@ try:
         # 서보 조향 (이전 결과와 다를 때만)
         if pred_class != prev_class:
             if pred_class == 'left':
-                afb.gpio.servo(30)
+                afb1.gpio.servo(30)
             elif pred_class == 'right':
-                afb.gpio.servo(150)
+                afb1.gpio.servo(150)
             elif pred_class == 'go':
-                afb.gpio.servo(80)
+                afb1.gpio.servo(80)
             prev_class = pred_class
 
         # 디버깅 정보
@@ -68,7 +68,7 @@ try:
         cv2.rectangle(frame_bgr, (0, int(height * 0.5)), (640, 480), (255, 0, 0), 2)
 
         # 실시간 웹 스트리밍
-        afb.flask.imshow("AFB Camera", frame_bgr, 0)
+        afb1.flask.imshow("AFB Camera", frame_bgr, 0)
 
         # 프레임 처리 속도 측정 로그
         est_fps = 1 / elapsed if elapsed > 0 else 0
@@ -79,7 +79,7 @@ try:
             break
 
 finally:
-    afb.gpio.stop_all()
-    afb.camera.release_camera()
+    afb1.gpio.stop_all()
+    afb1.camera.release_camera()
     out.release()
     cv2.destroyAllWindows()
