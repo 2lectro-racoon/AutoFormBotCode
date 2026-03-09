@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 
 # 모델 로드
-model = load_model('cnn_goleftright_model.h5')
+model = load_model('CNN.h5')
 class_names = ['go', 'left', 'right']
 
 # 시스템 초기화
