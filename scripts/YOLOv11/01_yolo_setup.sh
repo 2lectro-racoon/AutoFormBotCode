@@ -12,12 +12,8 @@ fi
 source ~/.afbvenv/bin/activate
 # 2. Install ultralytics Yolov11
 pip install --upgrade pip
-pip install polars
-pip install opencv-python --no-deps
-pip install ultralytics  --no-deps
-pip install matplotlib pandas pillow psutil py-cpuinfo pyyaml scipy seaborn tqdm ultralytics-thop
 
-# Detect Raspberry Pi model and install torch accordingly
+# Detect Raspberry Pi model and install torch first
 MODEL=$(grep "Model" /proc/cpuinfo 2>/dev/null)
 
 echo "🔍 Detected device: $MODEL"
@@ -35,6 +31,14 @@ else
     echo "⚠️ Unknown device → installing default PyTorch"
     pip install torch torchvision torchaudio
 fi
+
+# Install other dependencies
+pip install polars
+pip install opencv-python --no-deps
+pip install matplotlib pandas pillow psutil py-cpuinfo pyyaml scipy seaborn tqdm ultralytics-thop
+
+# Install Ultralytics last
+pip install ultralytics --no-deps
 
 echo "✅ Ultralytics YOLOv11 install complete!"
 echo "🔄 Virtual environment '.afbvenv' is ready."
