@@ -13,24 +13,27 @@ source ~/.afbvenv/bin/activate
 # 2. Install ultralytics Yolov11
 pip install --upgrade pip
 
-# Detect Raspberry Pi model and install torch first
-MODEL=$(grep "Model" /proc/cpuinfo 2>/dev/null)
+pip install --pre torch torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/nightly/cpu
 
-echo "🔍 Detected device: $MODEL"
+# # Detect Raspberry Pi model and install torch first
+# MODEL=$(grep "Model" /proc/cpuinfo 2>/dev/null)
 
-if [[ $MODEL == *"Raspberry Pi 4"* ]]; then
-    echo "🟡 Raspberry Pi 4 detected → installing PyTorch nightly (better CPU compatibility)"
-    pip install --pre torch torchvision torchaudio \
-        --index-url https://download.pytorch.org/whl/nightly/cpu
+# echo "🔍 Detected device: $MODEL"
 
-elif [[ $MODEL == *"Raspberry Pi 5"* ]]; then
-    echo "🟢 Raspberry Pi 5 detected → installing stable PyTorch"
-    pip install torch torchvision torchaudio
+# if [[ $MODEL == *"Raspberry Pi 4"* ]]; then
+#     echo "🟡 Raspberry Pi 4 detected → installing PyTorch nightly (better CPU compatibility)"
+#     pip install --pre torch torchvision torchaudio \
+#         --index-url https://download.pytorch.org/whl/nightly/cpu
 
-else
-    echo "⚠️ Unknown device → installing default PyTorch"
-    pip install torch torchvision torchaudio
-fi
+# elif [[ $MODEL == *"Raspberry Pi 5"* ]]; then
+#     echo "🟢 Raspberry Pi 5 detected → installing stable PyTorch"
+#     pip install torch torchvision torchaudio
+
+# else
+#     echo "⚠️ Unknown device → installing default PyTorch"
+#     pip install torch torchvision torchaudio
+# fi
 
 # Install other dependencies
 pip install polars
