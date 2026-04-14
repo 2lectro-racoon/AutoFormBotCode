@@ -9,6 +9,8 @@ set -e
 # - This script may be executed by systemd (as root) where SUDO_UID is not set.
 # - Always force wlan0 out of STA/NM control before enabling AP.
 
+sudo apt install -y python3-pip python3-flask dnsmasq hostapd
+
 INTERFACE="wlan0"
 AP_IP_CIDR="192.168.4.1/24"
 UNMANAGED_CONF="/etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf"
