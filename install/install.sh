@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-if [[ "$1" =~ ^[0-9]+$ ]]; then
-  printf -v SSID "AFB%03d" "$1"
+HOSTNAME_VALUE="$(hostname)"
+NUM_SUFFIX="$(echo "$HOSTNAME_VALUE" | grep -oE '[0-9]+$')"
+
+if [[ -n "$NUM_SUFFIX" ]]; then
+  SSID="AFB-${NUM_SUFFIX}"
 else
   SSID="AFB"
 fi
@@ -90,9 +93,9 @@ echo "Copying /scripts/lec to \$HOME..."
 cp -r "$AUTOFORM_PATH/scripts/lec_1" "$HOME/afb_home/lec_1"
 cp -r "$AUTOFORM_PATH/scripts/lec_2" "$HOME/afb_home/lec_2"
 cp -r "$AUTOFORM_PATH/scripts/lec_quad" "$HOME/afb_home/lec_quad"
-bash "$AUTOFORM_PATH/scripts/nmservice/01_setup_web_server.sh"
-bash "$AUTOFORM_PATH/scripts/nmservice/05_enable_auto_wifi_service.sh" "$SSID"
-bash "$AUTOFORM_PATH/scripts/nmservice/07_enable_wifi_monitor.sh" "$SSID"
+# bash "$AUTOFORM_PATH/scripts/nmservice/01_setup_web_server.sh"
+# bash "$AUTOFORM_PATH/scripts/nmservice/05_enable_auto_wifi_service.sh" "$SSID"
+# bash "$AUTOFORM_PATH/scripts/nmservice/07_enable_wifi_monitor.sh" "$SSID"
 bash "$AUTOFORM_PATH/scripts/i2c/01_install.sh"
 bash "$AUTOFORM_PATH/scripts/i2c/02_i2c_service.sh"
 # bash "$AUTOFORM_PATH/scripts/i2c/03_oled_clear_service.sh"
