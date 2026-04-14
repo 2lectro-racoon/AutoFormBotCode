@@ -38,6 +38,20 @@ fi
 
 log "🔧 Setting up Access Point mode..."
 
+# Ensure required config directories exist
+sudo mkdir -p /etc/hostapd
+
+# Ensure required packages are installed
+if ! command -v hostapd >/dev/null 2>&1; then
+  echo "❌ hostapd is not installed. Please install hostapd first."
+  exit 1
+fi
+
+if ! command -v dnsmasq >/dev/null 2>&1; then
+  echo "❌ dnsmasq is not installed. Please install dnsmasq first."
+  exit 1
+fi
+
 echo "[DEBUG] Writing ssid: '$SSID' into hostapd.conf"
 
 HOSTAPD_CONF_CONTENT=$(cat <<EOF
