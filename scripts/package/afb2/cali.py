@@ -85,8 +85,12 @@ def resolve_steering_sender() -> Callable[[float], None]:
 
 def send_angle(angle: float, calib: SteeringCalib, sender: Callable[[float], None]) -> float:
     out = calib.clamp(angle)
-    sender(out)
-    return out
+
+    # Convert to int for SPI protocol (bitwise operations require int)
+    out_int = int(round(out))
+
+    sender(out_int)
+    return out_int
 
 
 def print_help() -> None:
