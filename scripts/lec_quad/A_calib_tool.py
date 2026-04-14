@@ -19,6 +19,8 @@ def send_neutral(neutral: List[float], calib: Calibration) -> None:
 
 def main():
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    afb2.gpio.reset()
+    time.sleep(8)
     afb2.flask.startServer()
     path = "calib_quad.json"
     calib = load_calibration(path)

@@ -12,3 +12,7 @@ webserver/
 
 # log
 install/install_log_*.log
+
+# calib.json
+scrpits/package/afb2/steering_center.json
+scrpits/package/afb1/steering_center.json
