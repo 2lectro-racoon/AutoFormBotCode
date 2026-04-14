@@ -45,6 +45,8 @@ echo "Setting up direnv auto-venv for ~/afb_home..."
 sudo apt-get update
 sudo apt-get install -y direnv
 
+sudo apt install -y python3-pip python3-flask dnsmasq hostapd
+
 # Enable direnv hook for bash (idempotent)
 BASHRC="$HOME/.bashrc"
 if ! grep -q 'direnv hook bash' "$BASHRC"; then
