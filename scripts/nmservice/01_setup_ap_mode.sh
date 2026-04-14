@@ -14,7 +14,28 @@ sudo apt install -y python3-pip python3-flask dnsmasq hostapd
 INTERFACE="wlan0"
 AP_IP_CIDR="192.168.4.1/24"
 UNMANAGED_CONF="/etc/NetworkManager/conf.d/99-unmanaged-wlan0.conf"
-CHANNEL="6"   # 2.4GHz
+DEFAULT_CHANNEL="36"   # 5GHz
+
+select_5ghz_channel() {
+  local ssid_value="$1"
+  local num_suffix mod
+
+  num_suffix=$(echo "$ssid_value" | grep -oE '[0-9]+$' || true)
+
+  if [[ -z "$num_suffix" ]]; then
+    echo "$DEFAULT_CHANNEL"
+    return 0
+  fi
+
+  mod=$((10#$num_suffix % 4))
+
+  case "$mod" in
+    0) echo "36" ;;
+    1) echo "40" ;;
+    2) echo "44" ;;
+    3) echo "48" ;;
+  esac
+}
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
@@ -37,6 +58,8 @@ if [[ -z "$SSID" ]]; then
   exit 1
 fi
 
+CHANNEL="$(select_5ghz_channel "$SSID")"
+echo "[DEBUG] Selected 5GHz channel: '$CHANNEL'"
 
 log "🔧 Setting up Access Point mode..."
 
@@ -60,9 +83,12 @@ HOSTAPD_CONF_CONTENT=$(cat <<EOF
 interface=wlan0
 driver=nl80211
 ssid=${SSID}
-hw_mode=g
+hw_mode=a
 channel=${CHANNEL}
-wmm_enabled=0
+country_code=KR
+ieee80211n=1
+ieee80211ac=1
+wmm_enabled=1
 macaddr_acl=0
 auth_algs=1
 ignore_broadcast_ssid=0
