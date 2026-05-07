@@ -20,6 +20,7 @@ Notes:
 from __future__ import annotations
 
 import threading
+import time
 from typing import Iterable, List, Optional, Sequence
 
 import spidev
@@ -29,10 +30,15 @@ SPI_BUS = 0
 SPI_DEVICE = 0  # CE0
 SPI_MAX_SPEED_HZ = 500_000
 SPI_MODE = 0  # SPI_MODE0
+
+# STM32가 SPI 패킷을 파싱할 시간을 확보하기 위한 패킷 간 최소 간격.
+# 많은 서보 명령이 연속으로 나갈 때 STM32 수신 파서가 밀리거나 꼬이는 것을 줄인다.
+SPI_PACKET_GAP_SEC = 0.003
 # ---------------------------------------------------
 
 _spi: Optional[spidev.SpiDev] = None
 _lock = threading.Lock()
+_last_packet_t = 0.0
 
 
 def get_spi() -> spidev.SpiDev:
@@ -91,12 +97,25 @@ def build_packet(cmd: int, data_bytes: Sequence[int] | None = None) -> List[int]
 
 
 def send_packet(cmd: int, data_bytes: Sequence[int] | None = None) -> List[int]:
-    """Send a packet and return the 6-byte response."""
+    """Send a packet and return the 6-byte response.
+
+    모든 SPI 패킷 전송은 이 함수를 통과한다.
+    여기에서 패킷 간 최소 간격을 보장하면 servo_set(), leg_set(), crawl_step()
+    어느 경로로 호출되더라도 STM32에 너무 빠르게 명령이 몰리지 않는다.
+    """
+    global _last_packet_t
+
     tx = build_packet(cmd, data_bytes)
 
     with _lock:
+        now = time.monotonic()
+        remain = SPI_PACKET_GAP_SEC - (now - _last_packet_t)
+        if remain > 0:
+            time.sleep(remain)
+
         spi = get_spi()
         rx = spi.xfer2(tx)
+        _last_packet_t = time.monotonic()
 
     # Ensure python list[int]
     return [int(b) & 0xFF for b in rx]
