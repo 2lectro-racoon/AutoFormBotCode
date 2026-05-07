@@ -33,7 +33,7 @@ SPI_MODE = 0  # SPI_MODE0
 
 # STM32가 SPI 패킷을 파싱할 시간을 확보하기 위한 패킷 간 최소 간격.
 # 많은 서보 명령이 연속으로 나갈 때 STM32 수신 파서가 밀리거나 꼬이는 것을 줄인다.
-SPI_PACKET_GAP_SEC = 0.003
+SPI_PACKET_GAP_SEC = 0.0015
 # ---------------------------------------------------
 
 _spi: Optional[spidev.SpiDev] = None
