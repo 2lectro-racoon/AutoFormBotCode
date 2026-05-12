@@ -58,6 +58,8 @@ LIFT_DZ = 60.0
 
 # 몸을 한쪽으로 얼마나 기울일지(무게중심 이동)
 # 한 다리를 들기 전에 반대 방향 지지력을 높이기 위해 사용
+# 빠른 보행 테스트가 필요하면 False로 바꿔서 SHIFT 단계를 건너뛸 수 있다.
+SHIFT_ENABLE = True
 SHIFT_MAG = 20.0
 
 # ------------------------------------------------------------
@@ -96,7 +98,8 @@ SWING_ARC_DZ = 15.0
 # 바닥에 닿아 있는 모든 다리를 반대로 밀어
 # 몸체가 전진하는 느낌을 만드는 단계
 BODYMOVE_ENABLE = True
-BODYMOVE_T = 0.35
+# BODYMOVE 시간을 줄이면 한 보행 사이클이 빨라진다.
+BODYMOVE_T = 0.24
 
 BODYMOVE_FWD = 1.25
 BODYMOVE_LAT = 0.9
@@ -119,13 +122,14 @@ PUSH_YAW = 15.0
 # 시간 관련
 # ------------------------------------------------------------
 # 보간 주기(작을수록 부드럽지만 연산 많아짐)
-MOVE_DT = 0.02
+MOVE_DT = 0.015
 
 # shift/lift/swing/down/unshift 각 단계 시간
-PHASE_T = 0.2
+# 값을 줄이면 보행이 빨라지지만, 너무 낮추면 로봇이 흔들릴 수 있다.
+PHASE_T = 0.14
 
 # 일정 시간 입력이 없으면 정지 상태로 바꿈
-IDLE_HOLD = 0.35
+IDLE_HOLD = 0.30
 
 # ------------------------------------------------------------
 # Crawl 순서
@@ -569,11 +573,11 @@ class CrawlDriver:
         body_dy = -(cmd.vy * STEP_LAT * BODYMOVE_LAT)
         body_dx_yaw = -(cmd.wz * STEP_YAW * BODYMOVE_YAW)
 
-        print(
-            f"[BODYMOVE] cmd(vx,vy,wz)=({cmd.vx:+d},{cmd.vy:+d},{cmd.wz:+d}) "
-            f"body_dx={body_dx:+.1f} body_dy={body_dy:+.1f} body_dx_yaw={body_dx_yaw:+.1f} T={BODYMOVE_T:.2f}",
-            flush=True,
-        )
+        # print(
+        #     f"[BODYMOVE] cmd(vx,vy,wz)=({cmd.vx:+d},{cmd.vy:+d},{cmd.wz:+d}) "
+        #     f"body_dx={body_dx:+.1f} body_dy={body_dy:+.1f} body_dx_yaw={body_dx_yaw:+.1f} T={BODYMOVE_T:.2f}",
+        #     flush=True,
+        # )
 
         targets: Dict[int, Tuple[float, float, float]] = {}
 
@@ -598,7 +602,8 @@ class CrawlDriver:
             targets[leg_id] = (xt, yt, sz)
 
         if RECENTER_ENABLE:
-            print(f"[RECENTER] enabled k={RECENTER_K:.3f} (targets pulled toward HOME)", flush=True)
+            # print(f"[RECENTER] enabled k={RECENTER_K:.3f} (targets pulled toward HOME)", flush=True)
+            pass
 
         steps = max(1, int(BODYMOVE_T / MOVE_DT))
         start = {i: self.foot[i] for i in (0, 1, 2, 3)}
@@ -676,7 +681,8 @@ class CrawlDriver:
         # 1) SHIFT : 들 다리 반대쪽으로 몸의 중심 이동
         # ----------------------------------------------------
         desired_body_shift = +SHIFT_MAG if swing_leg in RIGHT_LEGS else -SHIFT_MAG
-        self.shift_body(swing_leg, desired_body_shift, PHASE_T)
+        if SHIFT_ENABLE:
+            self.shift_body(swing_leg, desired_body_shift, PHASE_T)
 
         # ----------------------------------------------------
         # 1b) COUNTER : 대각선/보조 다리를 임시로 더 뻗어서 안정성 확보
@@ -776,7 +782,7 @@ class CrawlDriver:
             dy_local_shift = body_y_to_local_y(leg_id, desired_body_shift)
             x_cur, y_cur, _ = self.foot[leg_id]
 
-            y_t = y_cur - dy_local_shift
+            y_t = y_cur - dy_local_shift if SHIFT_ENABLE else y_cur
             x_t = x_cur
 
             if leg_id == diag_leg:
@@ -830,14 +836,14 @@ class CrawlDriver:
             seq = [0, 1, -1, 3, 2, -1]
             seq_name = "S/BACK"
 
-        print(f"[FB] select seq={seq_name} cmd.vx={cmd.vx:+d} -> {seq}", flush=True)
+        # print(f"[FB] select seq={seq_name} cmd.vx={cmd.vx:+d} -> {seq}", flush=True)
 
         item = seq[self.fb_idx % len(seq)]
         self.fb_idx += 1
 
         # -1은 BODYMOVE 단계 의미
         if item == -1:
-            print(f"[FB] step={self.fb_idx:04d} phase=BODYMOVE", flush=True)
+            # print(f"[FB] step={self.fb_idx:04d} phase=BODYMOVE", flush=True)
             ok = self._push_all(cmd)
             if not ok:
                 self.go_stand(duration=0.3)
@@ -859,21 +865,23 @@ class CrawlDriver:
 
         ang = _try_ik_angles_deg(*swing_tgt)
         if ang is None:
-            print(
-                f"[FB] step={self.fb_idx:04d} leg={item} (BL/FL/BR/FR)="
-                f"{['FR','BR','BL','FL'][item]} "
-                f"swing_tgt=({swing_tgt[0]:+.1f},{swing_tgt[1]:+.1f},{swing_tgt[2]:+.1f}) a0/a1/a2=(n/a)",
-                flush=True,
-            )
+            # print(
+            #     f"[FB] step={self.fb_idx:04d} leg={item} (BL/FL/BR/FR)="
+            #     f"{['FR','BR','BL','FL'][item]} "
+            #     f"swing_tgt=({swing_tgt[0]:+.1f},{swing_tgt[1]:+.1f},{swing_tgt[2]:+.1f}) a0/a1/a2=(n/a)",
+            #     flush=True,
+            # )
+            pass
         else:
             a0d, a1d, a2d = ang
-            print(
-                f"[FB] step={self.fb_idx:04d} leg={item} (BL/FL/BR/FR)="
-                f"{['FR','BR','BL','FL'][item]} "
-                f"swing_tgt=({swing_tgt[0]:+.1f},{swing_tgt[1]:+.1f},{swing_tgt[2]:+.1f}) "
-                f"a0={a0d:+.2f} a1={a1d:+.2f} a2={a2d:+.2f}",
-                flush=True,
-            )
+            # print(
+            #     f"[FB] step={self.fb_idx:04d} leg={item} (BL/FL/BR/FR)="
+            #     f"{['FR','BR','BL','FL'][item]} "
+            #     f"swing_tgt=({swing_tgt[0]:+.1f},{swing_tgt[1]:+.1f},{swing_tgt[2]:+.1f}) "
+            #     f"a0={a0d:+.2f} a1={a1d:+.2f} a2={a2d:+.2f}",
+            #     flush=True,
+            # )
+            pass
 
         ok = self._single_leg_step_no_push(item, cmd, swing_scale=FB_SWING_SCALE, support_move=False)
         if not ok:
@@ -907,7 +915,7 @@ class CrawlDriver:
                 self.order_idx = 0
                 self._crawl_order_key = "fwd" if fb_dir > 0 else "back"
 
-                print(f"[FB] direction change -> {'FWD' if fb_dir > 0 else 'BACK'} : reset idx + go_stand", flush=True)
+            # print(f"[FB] direction change -> {'FWD' if fb_dir > 0 else 'BACK'} : reset idx + go_stand", flush=True)
 
             self.fb_step(cmd)
             return
@@ -944,16 +952,18 @@ class CrawlDriver:
         dz_ctr2_local = dz_ctr_local * COUNTER2_SCALE if ctr2_leg is not None else 0.0
 
         if ctr2_leg is None:
-            print(
-                f"[COUNTER] swing_leg={swing_leg} diag_leg={diag_leg} "
-                f"local_ctr=({dx_ctr_local:+.1f},{dy_ctr_local:+.1f},{dz_ctr_local:+.1f})"
-            )
+            # print(
+            #     f"[COUNTER] swing_leg={swing_leg} diag_leg={diag_leg} "
+            #     f"local_ctr=({dx_ctr_local:+.1f},{dy_ctr_local:+.1f},{dz_ctr_local:+.1f})"
+            # )
+            pass
         else:
-            print(
-                f"[COUNTER] swing_leg={swing_leg} diag_leg={diag_leg} ctr2_leg={ctr2_leg} "
-                f"diag=({dx_ctr_local:+.1f},{dy_ctr_local:+.1f},{dz_ctr_local:+.1f}) "
-                f"ctr2=({dx_ctr2_local:+.1f},{dy_ctr2_local:+.1f},{dz_ctr2_local:+.1f})"
-            )
+            # print(
+            #     f"[COUNTER] swing_leg={swing_leg} diag_leg={diag_leg} ctr2_leg={ctr2_leg} "
+            #     f"diag=({dx_ctr_local:+.1f},{dy_ctr_local:+.1f},{dz_ctr_local:+.1f}) "
+            #     f"ctr2=({dx_ctr2_local:+.1f},{dy_ctr2_local:+.1f},{dz_ctr2_local:+.1f})"
+            # )
+            pass
 
         sx, sy, sz = self.stand
         z_lift = sz + LIFT_DZ
@@ -968,17 +978,18 @@ class CrawlDriver:
         dx_leg = body_x_to_local_x(swing_leg, body_dx_swing)
         dy_leg = body_y_to_local_y(swing_leg, body_dy)
 
-        print(
-            f"[SWING] leg={swing_leg} body_dx={body_dx_swing:+.1f} body_dy={body_dy:+.1f} "
-            f"-> local_dx={dx_leg:+.1f} local_dy={dy_leg:+.1f}"
-        )
+        # print(
+        #     f"[SWING] leg={swing_leg} body_dx={body_dx_swing:+.1f} body_dy={body_dy:+.1f} "
+        #     f"-> local_dx={dx_leg:+.1f} local_dy={dy_leg:+.1f}"
+        # )
 
         support = [i for i in (0, 1, 2, 3) if i != swing_leg]
         body_dy_support = -body_dy / len(support) if support else 0.0
 
         # 1) SHIFT
         desired_body_shift = +SHIFT_MAG if swing_leg in RIGHT_LEGS else -SHIFT_MAG
-        self.shift_body(swing_leg, desired_body_shift, PHASE_T)
+        if SHIFT_ENABLE:
+            self.shift_body(swing_leg, desired_body_shift, PHASE_T)
 
         # 1b) COUNTER
         xd, yd, zd = self.foot[diag_leg]
@@ -1004,13 +1015,15 @@ class CrawlDriver:
         xt, yt, zt = swing_target
         ang = _try_ik_angles_deg(xt, yt, zt)
         if ang is None:
-            print(f"[SWING_TGT] leg={swing_leg} xyz=({xt:+.1f},{yt:+.1f},{zt:+.1f}) a0/a1/a2=(n/a)")
+            # print(f"[SWING_TGT] leg={swing_leg} xyz=({xt:+.1f},{yt:+.1f},{zt:+.1f}) a0/a1/a2=(n/a)")
+            pass
         else:
             a0d, a1d, a2d = ang
-            print(
-                f"[SWING_TGT] leg={swing_leg} xyz=({xt:+.1f},{yt:+.1f},{zt:+.1f}) "
-                f"a0={a0d:+.2f} a1={a1d:+.2f} a2={a2d:+.2f}"
-            )
+            # print(
+            #     f"[SWING_TGT] leg={swing_leg} xyz=({xt:+.1f},{yt:+.1f},{zt:+.1f}) "
+            #     f"a0={a0d:+.2f} a1={a1d:+.2f} a2={a2d:+.2f}"
+            # )
+            pass
 
         support_targets = {}
         for leg_id in support:
@@ -1081,7 +1094,7 @@ class CrawlDriver:
             dy_local_shift = body_y_to_local_y(leg_id, desired_body_shift)
             x_cur, y_cur, _ = self.foot[leg_id]
 
-            y_t = y_cur - dy_local_shift
+            y_t = y_cur - dy_local_shift if SHIFT_ENABLE else y_cur
             x_t = x_cur
 
             if leg_id == diag_leg:
@@ -1117,17 +1130,44 @@ class CrawlDriver:
     def reset(self):
         """
         GPIO/보드 리셋.
-        현재는 리셋 후 15초 대기.
+        현재는 리셋 후 5초 대기.
         하드웨어 초기화 시간 확보 목적.
         """
         self.api.leg_reset()
-        time.sleep(15)
+        time.sleep(5)
 
     def shutdown(self):
         """
         종료 시 안전하게 센터 포즈로 이동.
         """
         self.api.go_center_pose(debug=True)
+    
+    def bodyup(
+        self,
+        x: float = 100.0,
+        y: float = 100.0,
+        z: float = -100.0,
+        duration: float = 0.6,
+    ):
+        """
+        몸을 높이는 자세로 이동.
+
+        기본값:
+          x=100, y=100, z=-100
+
+        예시:
+          drv.bodyup()
+          drv.bodyup(120, 110, -90)
+          drv.bodyup(z=-120)
+        """
+        ok = self.set_all(x, y, z, duration)
+
+        if ok:
+            self.stand = (x, y, z)
+            self.home = {i: self.foot[i] for i in (0, 1, 2, 3)}
+
+        return ok
+
 
     def _maybe_reset_on_direction_change(self, cmd: Cmd):
         """
@@ -1152,11 +1192,11 @@ class CrawlDriver:
         self._fb_dir = 0
         self._crawl_order_key = "fwd"
 
-        print(
-            f"[RESET] cmd change {prev.vx:+d},{prev.vy:+d},{prev.wz:+d} -> "
-            f"{cmd.vx:+d},{cmd.vy:+d},{cmd.wz:+d} : go_stand + reset idx",
-            flush=True,
-        )
+        # print(
+        #     f"[RESET] cmd change {prev.vx:+d},{prev.vy:+d},{prev.wz:+d} -> "
+        #     f"{cmd.vx:+d},{cmd.vy:+d},{cmd.wz:+d} : go_stand + reset idx",
+        #     flush=True,
+        # )
         self.go_stand(duration=0.25)
 
 
