@@ -102,6 +102,7 @@ def print_help() -> None:
     print("  center           send saved center angle")
     print("  use              store current angle as center")
     print("  lim <lo> <hi>    set min/max angle")
+    print("  t                drive forward 1s, backward 1s")
     print("  p                print current state")
     print("  s                save")
     print("  q                save and quit")
@@ -174,6 +175,19 @@ def main() -> None:
         if cmd in {"use", "u"}:
             calib.center_deg = current
             print(f"[saved center in memory] {calib.center_deg:.2f} deg")
+            continue
+
+        if cmd == "t":
+            print("[test] forward")
+            afb2.car.motor(100)
+            time.sleep(1.0)
+
+            print("[test] backward")
+            afb2.car.motor(-100)
+            time.sleep(1.0)
+
+            afb2.car.motor(0)
+            print("[test] done")
             continue
 
         if cmd in {"p", "print"}:
